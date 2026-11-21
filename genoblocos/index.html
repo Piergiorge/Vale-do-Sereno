@@ -31,6 +31,17 @@
   .legend div { display:flex; gap:10px; align-items:flex-start; }
   .legend .ico { flex:0 0 26px; height:26px; border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:14px; }
   .legend p { margin:0; } .legend b { color:var(--text); } .legend span { color:var(--muted); }
+  .legend h3 { grid-column:1/-1; margin:6px 0 0; font-size:15px; }
+  .legend h3.good { color:#9be7a0; } .legend h3.bad { color:#ff8a80; } .legend h3.read { color:#ffd54f; }
+  .legend .tag { display:block; margin-top:2px; }
+  .legend .def { color:#9be7a0; }
+  .infocard { max-width:440px; width:100%; background:#241838; border-radius:14px; padding:16px 18px; border:2px solid var(--c, #ffd54f); }
+  .infocard .head { display:flex; align-items:center; gap:10px; margin-bottom:6px; }
+  .infocard .head .ico { width:38px; height:38px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:20px; background:var(--c); }
+  .infocard .kind { font-size:12px; font-weight:700; letter-spacing:.06em; }
+  .infocard h2 { margin:0; font-size:21px; color:var(--text); }
+  .infocard p { margin:7px 0; font-size:14px; }
+  .infocard .lab { font-weight:700; color:var(--c); }
   .touch { display:none; flex-wrap:wrap; justify-content:center; gap:8px; user-select:none; -webkit-user-select:none; }
   .touch button { min-width:60px; height:54px; padding:0 10px; border-radius:12px; border:0; background:#2f2347; color:var(--text); font:inherit; font-size:18px; font-weight:700; touch-action:none; }
   .touch button.small { font-size:12px; }
@@ -68,6 +79,7 @@
     </div>
   </div>
 
+  <div class="overlay" id="info" hidden><div class="infocard" id="infoCard"></div></div>
   <div class="overlay" id="over" hidden>
     <div class="card" id="overCard"></div>
   </div>
@@ -86,15 +98,21 @@
 <div class="wrap hint"><kbd>←</kbd><kbd>→</kbd> mover · <kbd>↑</kbd>/<kbd>X</kbd> girar · <kbd>Z</kbd> girar ao contrário · <kbd>↓</kbd> descer · <kbd>Espaço</kbd> queda · <kbd>C</kbd> guardar · <kbd>E</kbd> power-up · <kbd>P</kbd> pausar</div>
 
 <div class="wrap legend">
-  <div><div class="ico" style="background:#80deea">⬡</div><p><b>Helicase</b> <span>abre a dupla hélice e remove as 2 linhas de baixo.</span></p></div>
-  <div><div class="ico" style="background:#f06292">✂️</div><p><b>CRISPR-Cas9</b> <span>corta todas as bases do mesmo tipo da peça atual e destrói todos os blocos virais (o CRISPR surgiu como imunidade antiviral das bactérias). Os blocos restantes caem.</span></p></div>
-  <div><div class="ico" style="background:#aed581">🔗</div><p><b>DNA ligase</b> <span>preenche as lacunas de linhas quase completas (até 2 buracos) com bases complementares.</span></p></div>
-  <div><div class="ico" style="background:#ffd54f">⏳</div><p><b>Telomerase</b> <span>estende o tempo: as peças caem na velocidade do nível 1 por 20 s.</span></p></div>
-  <div><div class="ico" style="background:#90caf9">✚</div><p><b>Reparo NER</b> <span>o reparo por excisão de nucleotídeos restaura os blocos danificados (cinza) e desfaz as mutações G→T do cigarro.</span></p></div>
-  <div><div class="ico" style="background:#ce93d8">☀️</div><p><b>Radiação UV</b> <span>forma dímeros de timina: empurra de baixo uma linha de DNA danificado (cinza), que não pareia.</span></p></div>
-  <div><div class="ico" style="background:#bcaaa4">🚬</div><p><b>Fumaça de cigarro</b> <span>o benzopireno forma adutos na guanina e causa transversões G→T, a assinatura mutacional do tabaco. Até 6 blocos G viram T (marcados com um ponto) e desfazem seus pares.</span></p></div>
-  <div><div class="ico" style="background:#f06292">🦠</div><p><b>Retrovírus</b> <span>integra o provírus no genoma: insere 2 blocos virais no meio de uma coluna e empurra o que está acima. O aviso mostra a coluna-alvo.</span></p></div>
-  <div><div class="ico" style="background:#b0bec5">⚡</div><p><b>Raio-X</b> <span>a quebra de dupla fita arranca 2 ou 3 blocos de uma linha soterrada e deixa buracos.</span></p></div>
+  <h3 class="good">✅ Ajudam: power-ups (aperte E para usar o primeiro da fila)</h3>
+  <div><div class="ico" style="background:#80deea">⬡</div><p><b>Helicase</b> <span>No jogo: remove as 2 linhas de baixo, com tudo o que estiver nelas.</span><span class="tag">Na célula: abre a dupla hélice, separando as fitas para a cópia ou a leitura do DNA.</span></p></div>
+  <div><div class="ico" style="background:#f06292">✂️</div><p><b>CRISPR-Cas9</b> <span>No jogo: corta todas as bases do mesmo tipo da peça que está caindo e destrói todos os blocos virais. O que estava em cima cai.</span><span class="tag">Na célula: a Cas9, guiada por um RNA, corta uma sequência específica. Surgiu como imunidade antiviral das bactérias.</span></p></div>
+  <div><div class="ico" style="background:#aed581">🔗</div><p><b>DNA ligase</b> <span>No jogo: tapa até 2 buracos por linha com bases que pareiam com as vizinhas, completando a linha.</span><span class="tag">Na célula: sela quebras na fita, como entre os fragmentos de Okazaki.</span></p></div>
+  <div><div class="ico" style="background:#ffd54f">⏳</div><p><b>Telomerase</b> <span>No jogo: as peças caem na velocidade do nível 1 por 20 s.</span><span class="tag">Na célula: alonga os telômeros, as pontas dos cromossomos que encurtam a cada divisão.</span></p></div>
+  <div><div class="ico" style="background:#90caf9">✚</div><p><b>Reparo NER</b> <span>No jogo: conserta os blocos danificados (cinza) e desfaz as mutações G→T (blocos com ponto).</span><span class="tag">Na célula: o reparo por excisão de nucleotídeos recorta o trecho lesado e refaz usando a outra fita como molde.</span></p></div>
+  <h3 class="bad">⚠️ Atrapalham: ameaças (sempre com 3 s de aviso, a partir do nível 2)</h3>
+  <div><div class="ico" style="background:#ce93d8">☀️</div><p><b>Radiação UV</b> <span>No jogo: empurra por baixo uma linha de DNA danificado (cinza), com um buraco.</span><span class="tag">Na célula: une duas timinas vizinhas (dímero de timina) e deforma a hélice.</span><span class="tag def">Defesa: Reparo NER ou Helicase.</span></p></div>
+  <div><div class="ico" style="background:#bcaaa4">🚬</div><p><b>Fumaça de cigarro</b> <span>No jogo: até 6 bases G viram T (marcadas com um ponto) e desfazem seus pares.</span><span class="tag">Na célula: o benzopireno se liga à guanina e causa transversões G→T, a assinatura mutacional do tabaco.</span><span class="tag def">Defesa: Reparo NER.</span></p></div>
+  <div><div class="ico" style="background:#f06292">🦠</div><p><b>Retrovírus</b> <span>No jogo: insere 2 blocos virais no meio da coluna marcada pela linha tracejada e empurra o que está acima.</span><span class="tag">Na célula: copia seu RNA em DNA e integra o provírus no genoma. Cerca de 8% do genoma humano vem de retrovírus antigos.</span><span class="tag def">Defesa: CRISPR-Cas9.</span></p></div>
+  <div><div class="ico" style="background:#b0bec5">⚡</div><p><b>Raio-X</b> <span>No jogo: arranca 2 ou 3 blocos de uma linha soterrada e deixa buracos presos.</span><span class="tag">Na célula: quebra as duas fitas de uma vez (quebra de dupla fita), o dano mais grave.</span><span class="tag def">Defesa: DNA ligase.</span></p></div>
+  <h3 class="read">🔎 Como ler os blocos</h3>
+  <div><div class="ico" style="background:#5d5470">A</div><p><b>Cinza com rachadura</b> <span>DNA danificado: não forma par nem rende pontes de hidrogênio. Some ao eliminar a linha ou com o Reparo NER.</span></p></div>
+  <div><div class="ico" style="background:#ef5350">T</div><p><b>Bloco com ponto marrom</b> <span>Mutação G→T do cigarro. Era um G; o Reparo NER o devolve.</span></p></div>
+  <div><div class="ico" style="background:#6a1b9a">🦠</div><p><b>Bloco viral</b> <span>Provírus integrado. Não pareia; some com CRISPR ou ao eliminar a linha.</span></p></div>
   <div><div class="ico" style="background:#9575cd">G1</div><p><b>Níveis</b> <span>seguem as fases do ciclo celular: G1 → S → G2 → M. A cada 10 linhas a velocidade aumenta.</span></p></div>
 </div>
 
@@ -159,11 +177,99 @@
         step++; nextTime += stepDur;
       }
     }
+    // ---- música pré-gravada: o loop é renderizado uma vez e depois só tocado em repetição (leve no celular) ----
+    let loopSrc = null, loopGain = null, loopSong = null, loopBpm = 0, rendering = false, liveMode = false, loopOn = true;
+    const FILES = {};   // músicas longas já gravadas em arquivo: bpm -> [arquivo, segundos do ciclo, início do ciclo]
+    const bpmOf = s => typeof s.bpm === 'function' ? s.bpm() : s.bpm;
+    function fakeCtx(log, ref) {
+      const fv = v => typeof v === 'number' ? (Math.abs(v - ref.base) < 60 ? 'T' + Math.round((v - ref.base) * 1e6) : v.toFixed(4)) : typeof v === 'string' ? v : '#';
+      const mk = p => new Proxy(function () {}, {
+        get(_, k) { if (k === 'sampleRate') return 64; if (k === 'currentTime') return 0; if (k === 'getChannelData') return () => new Float32Array(64); if (k === 'length') return 64; if (typeof k === 'symbol') return undefined; return mk(k); },
+        set(_, k, v) { log.push(String(k) + '=' + fv(v)); return true; },
+        apply(_, __, a) { log.push(p + '(' + a.map(fv).join(',') + ')'); return mk(p); }
+      });
+      return mk('ctx');
+    }
+    // descobre de quantos passos é o ciclo da música, tocando-a "no seco" num contexto falso
+    function loopLen(s, d) {
+      const N = 1300, sig = [], ref = { base: 0 }, pA = ac, pB = musicBus;
+      try {
+        for (let i = 0; i < N; i++) { const log = [], f = fakeCtx(log, ref); ac = f; musicBus = f; ref.base = 1e6 + i * 1000; s.play(i, ref.base, d); sig.push(log.sort().join('|')); }
+      } catch (e) { console.warn('ciclo da música: ' + (e && e.message)); return 256; } finally { ac = pA; musicBus = pB; }
+      if (sig.every(x => !x)) return -1;
+      for (let P = 4; P <= 640; P++) { let ok = true; for (let i = 0; i + P < N && ok; i++) if (sig[i] !== sig[i + P]) ok = false; if (ok) return P; }
+      return 256;
+    }
+    async function renderLoop(s, sr = 22050) {
+      const bpm = bpmOf(s), d = 60 / bpm / 2, P = loopLen(s, d);
+      if (P < 0) return null;   // a música ainda está em silêncio (estado do jogo): tenta de novo depois
+      const L = P * d;
+      const oc = new OfflineAudioContext(2, Math.ceil(sr * (L + 4)), sr);
+      const pA = ac, pB = musicBus;
+      ac = oc; musicBus = (() => { const b = oc.createGain(); b.gain.value = 0.16; b.connect(oc.destination); return b; })();
+      try { for (let i = 0; i < P; i++) s.play(i, .02 + i * d, d); } finally { ac = pA; musicBus = pB; }
+      const buf = await oc.startRendering(), n = Math.round(L * sr);
+      for (let ch = 0; ch < buf.numberOfChannels; ch++) { const x = buf.getChannelData(ch); for (let i = n; i < x.length; i++) x[i - n] += x[i]; }
+      window.__musica = { passos: P, segundos: +L.toFixed(1) };
+      return { buf, n, bpm };
+    }
+    async function loadFile(f, bpm) {
+      const res = await fetch(f[0]); if (!res.ok) throw new Error('sem arquivo');
+      const ab = await res.arrayBuffer();
+      const buf = await new Promise((ok, no) => ac.decodeAudioData(ab, ok, no));
+      return { buf, n: Math.round(f[1] * buf.sampleRate), start: f[2], bpm };
+    }
+    // a música do jogo às vezes fica em silêncio (pausa, menus): confere tocando 16 passos "no seco"
+    function silentNow(s) {
+      const pA = ac, pB = musicBus, ref = { base: 0 }; let any = false;
+      try { for (let i = 0; i < 16 && !any; i++) { const log = [], f = fakeCtx(log, ref); ac = f; musicBus = f; ref.base = 1e6 + i * 1000; s.play(i, ref.base, .2); if (log.length) any = true; } }
+      catch (e) { any = true; } finally { ac = pA; musicBus = pB; }
+      return !any;
+    }
+    function stopLoop() {
+      if (loopSrc) { try { loopGain.gain.setTargetAtTime(0.0001, ac.currentTime, .15); loopSrc.stop(ac.currentTime + .8); } catch (e) {} }
+      loopSrc = null; loopGain = null; loopSong = null;
+    }
+    function startLoop(r) {
+      const st = r.start || 0, src = ac.createBufferSource(); src.buffer = r.buf; src.loop = true; src.loopStart = st; src.loopEnd = st + r.n / r.buf.sampleRate;
+      const g = ac.createGain(); g.gain.setValueAtTime(0.0001, ac.currentTime); g.gain.exponentialRampToValueAtTime(1, ac.currentTime + .6);
+      src.connect(g); g.connect(master); src.start(0, st); loopOn = true;
+      if (loopSrc) { const os = loopSrc, og = loopGain; og.gain.setTargetAtTime(0.0001, ac.currentTime, .2); os.stop(ac.currentTime + 1.2); }
+      loopSrc = src; loopGain = g;
+    }
+    async function refreshLoop() {
+      if (!ac || rendering || liveMode) return;
+      if (!song) { if (loopSrc) stopLoop(); return; }
+      const bpm = bpmOf(song);
+      if (song === loopSong && bpm === loopBpm) {
+        const on = !silentNow(song);
+        if (on !== loopOn && loopGain) { loopOn = on; loopGain.gain.setTargetAtTime(on ? 1 : 0.0001, ac.currentTime, .12); }
+        return;
+      }
+      rendering = true; const s = song;
+      try { let r = null; if (FILES[bpm]) { try { r = await loadFile(FILES[bpm], bpm); } catch (e) { r = null; } } if (!r) r = await renderLoop(s); if (r && s === song && ac) { startLoop(r); loopSong = s; loopBpm = r.bpm; } }
+      catch (e) { console.warn('música pré-gravada indisponível; tocando ao vivo', e); liveMode = true; stopLoop(); step = 0; nextTime = ac.currentTime + .08; setInterval(schedule, 40); }
+      finally { rendering = false; }
+    }
+    // grava o ciclo atual em WAV (com meio segundo de folga de cada lado), para virar arquivo
+    window.__exportLoop = async () => {
+      const r = await renderLoop(song, 44100), sr = 44100, pad = Math.round(.5 * sr), n = r.n, len = n + 2 * pad;
+      const ch = [0, 1].map(c => r.buf.getChannelData(Math.min(c, r.buf.numberOfChannels - 1)));
+      const dv = new DataView(new ArrayBuffer(44 + len * 4)), ws = (o, t) => { for (let i = 0; i < t.length; i++) dv.setUint8(o + i, t.charCodeAt(i)); };
+      ws(0, 'RIFF'); dv.setUint32(4, 36 + len * 4, true); ws(8, 'WAVEfmt '); dv.setUint32(16, 16, true); dv.setUint16(20, 1, true); dv.setUint16(22, 2, true);
+      dv.setUint32(24, sr, true); dv.setUint32(28, sr * 4, true); dv.setUint16(32, 4, true); dv.setUint16(34, 16, true); ws(36, 'data'); dv.setUint32(40, len * 4, true);
+      for (let i = 0; i < len; i++) { const k = ((i - pad) % n + n) % n; for (let c = 0; c < 2; c++) dv.setInt16(44 + i * 4 + c * 2, Math.max(-1, Math.min(1, ch[c][k])) * 32767, true); }
+      const by = new Uint8Array(dv.buffer); let bin = ''; for (let i = 0; i < by.length; i += 32768) bin += String.fromCharCode.apply(null, by.subarray(i, i + 32768));
+      return { wav: btoa(bin), bpm: r.bpm, secs: n / sr };
+    };
+    window.__somEstado = () => ({ ac: !!ac, song: !!song, rendering, liveMode, tocando: !!loopSrc });
     function music(s) {
       song = s;
-      if (!ac || !s) return;
-      step = 0; nextTime = ac.currentTime + 0.08;
-      if (!timer) timer = setInterval(schedule, 40);
+      if (!ac) return;
+      if (liveMode) { step = 0; nextTime = ac.currentTime + 0.08; return; }
+      if (!s) { stopLoop(); return; }
+      setTimeout(refreshLoop, 30);
+      if (!timer) timer = setInterval(refreshLoop, 400);
     }
     function toggle() {
       muted = !muted;
@@ -205,6 +311,44 @@
     virus:   { name: 'Retrovírus',        detail: 'integração do provírus',   color: '#f06292', minLevel: 3, weight: 2 },
     raiox:   { name: 'Raio-X',            detail: 'quebra de dupla fita',     color: '#b0bec5', minLevel: 4, weight: 2 },
   };
+  // explicações mostradas na primeira vez que cada efeito aparece
+  const INFO = {
+    helicase: ['⬡', 'Remove as 2 linhas de baixo do tabuleiro, com tudo o que estiver nelas (inclusive DNA danificado).', 'A helicase abre a dupla hélice, separando as duas fitas, para que o DNA possa ser copiado ou lido.', 'Ótima contra as linhas de dano da radiação UV, que entram por baixo.'],
+    crispr: ['✂️', 'Corta todas as bases do mesmo tipo da peça que está caindo agora e destrói todos os blocos virais. O que estava em cima cai.', 'A Cas9 é guiada por um RNA até uma sequência específica e corta o DNA ali. Nas bactérias, o CRISPR é um sistema imune contra vírus.', 'Escolha bem a peça antes de usar: ela decide qual base será cortada. É a arma contra o retrovírus.'],
+    ligase: ['🔗', 'Tapa até 2 buracos por linha com bases que pareiam com as vizinhas, completando a linha.', 'A DNA ligase sela quebras na fita de DNA, como as que ficam entre os fragmentos de Okazaki na replicação.', 'Conserta os buracos do raio-X.'],
+    telomerase: ['⏳', 'Por 20 segundos, as peças caem na velocidade do nível 1.', 'A telomerase alonga os telômeros, as pontas dos cromossomos que encurtam a cada divisão celular.', 'Guarde para quando o tabuleiro estiver complicado.'],
+    reparo: ['✚', 'Conserta todos os blocos danificados (cinza), que voltam a formar pares, e desfaz as mutações G→T do cigarro (blocos com ponto).', 'O reparo por excisão de nucleotídeos (NER) recorta o trecho com a lesão, como um dímero de timina, e a DNA polimerase refaz usando a outra fita como molde.', 'A defesa contra radiação UV e cigarro.'],
+    uv: ['☀️', 'Empurra por baixo uma linha de DNA danificado (cinza), com um buraco. Bloco danificado não forma par.', 'A luz ultravioleta une duas timinas vizinhas da mesma fita (dímero de timina) e deforma a hélice. É a principal causa de câncer de pele.', 'Reparo NER conserta os blocos cinza; Helicase remove as linhas de baixo. Ou encaixe uma peça no buraco para eliminar a linha.'],
+    cigarro: ['🚬', 'Até 6 bases G viram T (aparecem com um ponto marrom), e os pares que elas formavam se desfazem.', 'O benzopireno da fumaça se liga à guanina. Na cópia, a célula erra e o G vira T: é a "assinatura" do tabaco no DNA dos tumores de pulmão.', 'Reparo NER desfaz as mutações G→T.'],
+    virus: ['🦠', 'Insere 2 blocos virais no meio da coluna marcada pela linha tracejada e empurra o que está acima. Blocos virais não pareiam.', 'O retrovírus copia seu RNA em DNA e integra essa cópia, o provírus, no genoma. Cerca de 8% do genoma humano vem de retrovírus antigos.', 'CRISPR-Cas9 destrói todos os blocos virais.'],
+    raiox: ['⚡', 'Arranca 2 ou 3 blocos de uma linha soterrada e deixa buracos presos embaixo de outros blocos.', 'A radiação ionizante quebra as duas fitas do DNA de uma vez (quebra de dupla fita), o dano mais grave.', 'DNA ligase tapa até 2 buracos por linha.']
+  };
+  const SHORT = { helicase: 'tira 2 linhas', crispr: 'corta base/vírus', ligase: 'tapa buracos', telomerase: 'lento por 20 s', reparo: 'conserta danos' };
+  const EFFECT = { uv: 'sobe linha danificada', cigarro: 'G vira T', virus: '2 blocos virais', raiox: 'buracos na pilha' };
+  const DEFENSE = { uv: 'Reparo NER ou Helicase', cigarro: 'Reparo NER', virus: 'CRISPR-Cas9', raiox: 'DNA ligase' };
+  const DEF_SHORT = { uv: 'NER ou Helicase', cigarro: 'Reparo NER', virus: 'CRISPR', raiox: 'DNA ligase' };
+  let seenInfo = {};
+  try { seenInfo = JSON.parse(localStorage.getItem('genoblocos-vistos') || '{}'); } catch (e) {}
+  let stateBeforeInfo = null;
+  function showInfo(kind, key) {
+    if (seenInfo[key]) return;
+    seenInfo[key] = 1; try { localStorage.setItem('genoblocos-vistos', JSON.stringify(seenInfo)); } catch (e) {}
+    const [icon, jogo, cel, dica] = INFO[key], good = kind === 'power', def = good ? POWERS[key] : THREATS[key];
+    const el = document.getElementById('info'), card = document.getElementById('infoCard');
+    card.style.setProperty('--c', def.color);
+    card.innerHTML = `<div class="head"><div class="ico">${icon}</div><div><div class="kind" style="color:${good ? '#9be7a0' : '#ff8a80'}">${good ? '✅ POWER-UP: AJUDA' : '⚠️ AMEAÇA: ATRAPALHA'}</div><h2>${def.name}</h2></div></div>
+      <p><span class="lab">No jogo:</span> ${jogo}</p>
+      <p><span class="lab">Na célula:</span> ${cel}</p>
+      <p><span class="lab">${good ? 'Como usar:' : 'Defesa:'}</span> ${good ? 'aperte <kbd>E</kbd> (ou o botão Power-up) para usar o primeiro da fila. ' : ''}${dica}</p>
+      ${good ? '' : '<p class="muted">Ela chega quando o aviso de 3 s acabar.</p>'}
+      <button class="big" id="infoOk">Entendi (Enter)</button>`;
+    el.hidden = false; stateBeforeInfo = state; state = 'info';
+    document.getElementById('infoOk').addEventListener('click', closeInfo);
+  }
+  function closeInfo() {
+    if (state !== 'info') return;
+    document.getElementById('info').hidden = true; state = stateBeforeInfo || 'play'; canvas.focus();
+  }
   const canPair = c => c && !c.damaged && !c.viral;
   const SHAPES = {
     I: [[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]],
@@ -400,7 +544,7 @@
   // ================= Power-ups =================
   function gainPower(p) {
     Sound.arp([84, 88, 91], 0.05, { type: 'sine', vol: 0.2 });
-    if (inventory.length < 3) { inventory.push(p); popup(`Power-up: ${POWERS[p].name}!`, POWERS[p].color, BY + 140, 16); }
+    if (inventory.length < 3) { inventory.push(p); popup(`Power-up: ${POWERS[p].name}!`, POWERS[p].color, BY + 140, 16); showInfo('power', p); }
     else { score += 500; popup('+500 (inventário cheio)', POWERS[p].color, BY + 140, 15); }
   }
 
@@ -560,6 +704,7 @@
     THREAT_SOUND[t.type]();
     threatsSuffered++;
     THREAT_APPLY[t.type](t);
+    if (state === 'play') popup('Defesa: ' + DEFENSE[t.type] + (inventory.some(p => DEFENSE[t.type].includes(POWERS[p].name)) ? ' (você tem!)' : ''), '#9be7a0', BY + 284, 13);
   }
 
   // ================= Fluxo do jogo =================
@@ -623,6 +768,7 @@
   }
 
   function keyDown(code) {
+    if (state === 'info') { if (code === 'Enter' || code === 'Space' || code === 'KeyE' || code === 'Escape') closeInfo(); return; }
     if (state === 'intro') { if (code === 'Enter' || code === 'Space') startGame(); return; }
     if (state === 'over') { if (code === 'Enter') startGame(); return; }
     if (code === 'KeyP' || code === 'Escape') { togglePause(); return; }
@@ -657,7 +803,7 @@
   document.getElementById('startBtn').addEventListener('click', startGame);
   for (const btn of document.querySelectorAll('#touch button')) {
     const k = btn.dataset.k;
-    btn.addEventListener('pointerdown', e => { e.preventDefault(); if (state === 'intro' || state === 'over') { startGame(); return; } keyDown(k); });
+    btn.addEventListener('pointerdown', e => { e.preventDefault(); if (state === 'info') { closeInfo(); return; } if (state === 'intro' || state === 'over') { startGame(); return; } keyDown(k); });
     for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) btn.addEventListener(ev, () => keyUp(k));
   }
 
@@ -682,7 +828,7 @@
     slowTimer = Math.max(0, slowTimer - dt);
     if (level >= 2) {
       threatTimer -= dt;
-      if (!pendingThreat && threatTimer <= 3) { pendingThreat = chooseThreat(); for (let k = 0; k < 3; k++) Sound.tone(880, 0.12, { type: 'square', vol: 0.09, delay: k * 0.5 }); }
+      if (!pendingThreat && threatTimer <= 3) { pendingThreat = chooseThreat(); showInfo('threat', pendingThreat.type); for (let k = 0; k < 3; k++) Sound.tone(880, 0.12, { type: 'square', vol: 0.09, delay: k * 0.5 }); }
       if (threatTimer <= 0) {
         applyThreat(pendingThreat); pendingThreat = null; threatTimer = threatInterval();
         if (state !== 'play') return;
@@ -710,7 +856,12 @@
   }
 
   // ================= Efeitos =================
-  function popup(text, color, y, size = 16) { popups.push({ text, color, y, size, t: 0 }); }
+  // textos flutuantes não se sobrepõem: se já há um recente na mesma altura, o novo desce
+  function popup(text, color, y, size = 16) {
+    let yy = y;
+    for (let k = 0; k < 6 && popups.some(o => o.t < 1.2 && Math.abs(o.y - yy) < 20); k++) yy += 22;
+    popups.push({ text, color, y: yy, size, t: 0 });
+  }
   function burst(x, y, cell) {
     const px = BX + x * CELL + CELL / 2, py = BY + (y - HIDDEN) * CELL + CELL / 2;
     const color = cell.viral ? '#ab47bc' : cell.damaged ? '#7e7491' : BASE_COLOR[cell.base];
@@ -922,19 +1073,27 @@
     if (hold) { ctx.globalAlpha = canHold ? 1 : 0.4; drawMini(hold, LX + LW / 2, 89, 18, now); ctx.globalAlpha = 1; }
 
     label('Power-ups (E)', LX, 150);
+    // caixas da fila: ícone e nome em cima, frase curta embaixo (vazia fica baixinha)
+    const LONG = { helicase: 'remove as 2 linhas de baixo', crispr: 'corta 1 tipo de base e os vírus', ligase: 'tapa até 2 buracos por linha', telomerase: 'peças mais lentas por 20 s', reparo: 'conserta o cinza e desfaz G→T' };
+    let iy = 156;
     for (let i = 0; i < 3; i++) {
-      const y = 156 + i * 46, p = inventory[i];
-      panelBox(LX, y, LW, 40);
+      const p = inventory[i], h = p ? 56 : 24;
+      panelBox(LX, iy, LW, h);
       if (p) {
-        ctx.fillStyle = POWERS[p].color; rr(LX + 6, y + 6, 28, 28, 7); ctx.fill();
-        drawIcon(p, LX + 20, y + 20, 22, '#1d1230');
-        ctx.fillStyle = '#efe9f7'; ctx.font = `${i === 0 ? 700 : 500} 12px system-ui, sans-serif`;
-        ctx.fillText(POWERS[p].name, LX + 40, y + 24);
-        if (i === 0) { ctx.strokeStyle = POWERS[p].color; ctx.lineWidth = 1.5; rr(LX + 0.75, y + 0.75, LW - 1.5, 38.5, 10); ctx.stroke(); }
-      } else { ctx.fillStyle = '#4e4266'; ctx.font = '12px system-ui, sans-serif'; ctx.fillText('vazio', LX + 40, y + 24); }
+        ctx.fillStyle = POWERS[p].color; rr(LX + 6, iy + 5, 22, 22, 6); ctx.fill();
+        drawIcon(p, LX + 17, iy + 16, 17, '#1d1230');
+        ctx.fillStyle = '#efe9f7'; for (const f of [12, 11, 10]) { ctx.font = `${i === 0 ? 700 : 600} ${f}px system-ui, sans-serif`; if (ctx.measureText(POWERS[p].name).width <= LW - 38) break; }
+        ctx.fillText(POWERS[p].name, LX + 33, iy + 20);
+        // frase em até 2 linhas, por toda a largura da caixa
+        ctx.fillStyle = '#9be7a0'; ctx.font = '11px system-ui, sans-serif';
+        const words = LONG[p].split(' '), ls = ['']; for (const w of words) { const t = (ls[ls.length - 1] + ' ' + w).trim(); if (ctx.measureText(t).width > LW - 12 && ls[ls.length - 1]) ls.push(w); else ls[ls.length - 1] = t; }
+        ls.slice(0, 2).forEach((l, k) => ctx.fillText(l, LX + 6, iy + 40 + k * 12));
+        if (i === 0) { ctx.strokeStyle = POWERS[p].color; ctx.lineWidth = 1.5; rr(LX + 0.75, iy + 0.75, LW - 1.5, h - 1.5, 10); ctx.stroke(); }
+      } else { ctx.fillStyle = '#4e4266'; ctx.font = '11px system-ui, sans-serif'; ctx.fillText('vazio', LX + 8, iy + 16); }
+      iy += h + 5;
     }
 
-    let sy = 318;
+    let sy = iy + 18;
     if (slowTimer > 0) {
       label('Telomerase', LX, sy); panelBox(LX, sy + 6, LW, 14);
       ctx.fillStyle = POWERS.telomerase.color; rr(LX + 2, sy + 8, (LW - 4) * slowTimer / 20, 10, 5); ctx.fill();
@@ -946,19 +1105,33 @@
         ctx.fillStyle = '#7e7491'; ctx.font = '12px system-ui, sans-serif'; ctx.fillText('a partir do nível 2', LX, sy + 20);
       } else if (pendingThreat) {
         const th = THREATS[pendingThreat.type];
-        panelBox(LX, sy + 6, LW, 58);
-        ctx.strokeStyle = th.color; ctx.lineWidth = 1.5; rr(LX + 0.75, sy + 6.75, LW - 1.5, 56.5, 10); ctx.stroke();
+        panelBox(LX, sy + 6, LW, 94);
+        ctx.strokeStyle = th.color; ctx.lineWidth = 1.5; rr(LX + 0.75, sy + 6.75, LW - 1.5, 92.5, 10); ctx.stroke();
         drawIcon(pendingThreat.type, LX + 20, sy + 26, 26, th.color);
         ctx.fillStyle = Math.floor(now / 200) % 2 ? th.color : '#ffffff'; ctx.font = '700 12px system-ui, sans-serif';
         ctx.fillText('⚠ ' + Math.ceil(Math.max(0, threatTimer)) + ' s', LX + 40, sy + 30);
         ctx.fillStyle = '#efe9f7'; ctx.font = '600 11px system-ui, sans-serif'; ctx.fillText(th.name, LX + 8, sy + 50);
         ctx.fillStyle = '#a99bc0'; ctx.font = '10px system-ui, sans-serif'; ctx.fillText(th.detail, LX + 8, sy + 61);
+        ctx.fillStyle = '#ff8a80'; ctx.fillText('⚠ ' + EFFECT[pendingThreat.type], LX + 8, sy + 75);
+        ctx.fillStyle = '#9be7a0'; ctx.fillText('defesa: ' + DEF_SHORT[pendingThreat.type], LX + 8, sy + 89);
       } else {
         ctx.fillStyle = '#efe9f7'; ctx.font = '600 13px system-ui, sans-serif';
         ctx.fillText(`próxima em ${Math.ceil(threatTimer)} s`, LX, sy + 20);
         const avail = Object.entries(THREATS).filter(([, t]) => level >= t.minLevel);
         avail.forEach(([k, t], i) => drawIcon(k, LX + 12 + i * 26, sy + 40, 20, t.color));
       }
+    }
+    // legenda rápida (sempre visível): o que ajuda, e como ler os blocos
+    {
+      const top = sy + (level < 2 ? 40 : pendingThreat ? 116 : 62);
+      const fit = (t, x, y, w, col) => { ctx.fillStyle = col; for (const f of [12, 11, 10, 9]) { ctx.font = `${f}px system-ui, sans-serif`; if (ctx.measureText(t).width <= w) break; } ctx.fillText(t, x, y); };
+      label('Ajudam (E)', LX, top);
+      [['helicase', 'tira 2 linhas'], ['crispr', 'corta base/vírus'], ['ligase', 'tapa buracos'], ['telomerase', 'cai mais devagar'], ['reparo', 'conserta danos']]
+        .forEach(([k, t], i) => { const y = top + 14 + i * 14; drawIcon(k, LX + 7, y - 4, 13, POWERS[k].color); fit(t, LX + 18, y + 1, LW - 18, '#ddd3ee'); });
+      const by = top + 14 + 5 * 14 + 4;
+      if (by + 46 <= H - 4) label('Blocos', LX, by);
+      if (by + 46 <= H - 4) [[{ base: 'A', damaged: true }, 'cinza: danificado'], [{ base: 'T', mutated: true }, 'ponto: era G'], [{ viral: true }, 'roxo: vírus']]
+        .forEach(([c, t], i) => { const y = by + 14 + i * 14; drawCell(LX, y - 11, 13, c, now); fit(t, LX + 18, y, LW - 18, '#ddd3ee'); });
     }
 
     // Painel direito
@@ -976,6 +1149,17 @@
     stat('Nível · fase', `${level} · ${phaseOf(level)}`, 396);
     stat('Pontes H', String(totalBonds), 440);
     if (combo > 1) stat('Combo', `×${combo}`, 484);
+    {
+      const top = 522;
+      label('Ameaça → defesa', RX, top);
+      [['uv', 'UV → Reparo'], ['cigarro', 'Cigarro → Reparo'], ['virus', 'Vírus → CRISPR'], ['raiox', 'Raio-X → Ligase']]
+        .forEach(([k, t], i) => {
+          const y = top + 16 + i * 16, on = level >= THREATS[k].minLevel;
+          ctx.globalAlpha = on ? 1 : .45; drawIcon(k, RX + 7, y - 4, 13, THREATS[k].color);
+          ctx.fillStyle = on ? '#ddd3ee' : '#7e7491'; for (const f of [12, 11, 10]) { ctx.font = `600 ${f}px system-ui, sans-serif`; if (ctx.measureText(t).width <= RW - 18) break; }
+          ctx.fillText(t, RX + 18, y + 1); ctx.globalAlpha = 1;
+        });
+    }
 
     // Legenda de pareamento
     ctx.font = '600 11px system-ui, sans-serif';
