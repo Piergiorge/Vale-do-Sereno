@@ -20,7 +20,6 @@ Todos se passam no mesmo lugar: o **Vale do Sereno**, uma cidade fictícia funda
 | 🦠 **Operon** | Simulação em tempo real | Regulação gênica em bactérias: óperons lac e trp, repressor, indutor, CAP-AMPc, diauxia, atenuação e diagnóstico de mutantes (IPTG, merodiploides F′) | [▶️ Jogar](https://piergiorge.github.io/Vale-do-Sereno/operon/) |
 | 🏝️ **Fundadores** | Estratégia por turnos (anos) | Genética de populações: efeito fundador, gargalo, deriva, endogamia, fluxo gênico, seleção balanceadora | [▶️ Jogar](https://piergiorge.github.io/Vale-do-Sereno/fundadores/) |
 | 🖥️ **Laudo** | Investigação (tela de computador de 8 bits) | Genética forense: STR, DNA degradado, misturas, Y-STR, mtDNA, paternidade, espécie por DNA, toxicologia e entomologia | [▶️ Jogar](https://piergiorge.github.io/Vale-do-Sereno/Laudo/) |
-| 🗼 **Torre 3** | Vigilância em tempo real (uma tela, câmeras e rádio) | Ecologia e saúde: incêndio x neblina, fauna ferida ou saudável, caça e garimpo, febre amarela em bugios, lendas e suas explicações | [▶️ Jogar](https://piergiorge.github.io/Vale-do-Sereno/torre-3/) |
 
 Todos os jogos têm efeitos sonoros e música gerados por código (a tecla **M** ou o botão de som liga e desliga) e funcionam no celular.
 
@@ -38,7 +37,6 @@ O menu é um mapa ilustrado do vale ao anoitecer. Cada jogo é um lugar:
 | Rio Sereno | Operon |
 | Universidade do Sereno | Fita Molde e GenoBlocos |
 | Instituto de Criminalística | Laudo |
-| Torre de vigia, na encosta da Serra da Bruma | Torre 3 |
 | A estrela de Kepler-Rubra | Locus Astra |
 
 ---
@@ -246,7 +244,53 @@ O painel mostra os óperons por dentro, em tempo real: RNA polimerase, repressor
 | 7. Intestino | Tudo junto, com refeições, jejum e mutações |
 | Desafio livre | Recorde de divisões em 4 minutos |
 
-Quando surge uma **mutação** (lacI⁻, lacOᶜ, lacIˢ, lacZ⁻, lacY⁻, crp⁻, cya⁻, trpR⁻, trpL∆, trpE⁻), você abre o laboratório e faz os testes clássicos de Jacob e Monod: indução com lactose ou IPTG, merodiploide F′ lac⁺ (teste cis-trans), adição de AMPc, crescimento com e sem Trp. Cada palpite errado mostra qual teste contradiz a hipótese. Os conceitos ficam guardados num caderno, e o progresso é salvo no navegador.
+Quando surge uma **mutação** (lacI⁻, lacOᶜ, lacIˢ, lacZ⁻, lacY⁻, crp⁻, cya⁻, trpR⁻, trpL∆, trpE⁻), você abre o laboratório e faz os testes clássicos de Jacob e Monod para descobrir qual gene foi afetado. Os conceitos ficam guardados num caderno, e o progresso é salvo no navegador.
+
+### 🔬 Os testes do laboratório
+
+O jogo pausa, e você mede uma amostra da sua linhagem ao lado da cepa selvagem. No óperon lac medem-se duas proteínas: a **β-galactosidase** (produto de *lacZ*, quebra a lactose) e a **permease LacY** (produto de *lacY*, põe a lactose para dentro). No óperon trp medem-se as **enzimas da via do triptofano** e se a célula **cresce**. Os resultados vêm em quatro níveis: nenhuma, baixa, média e alta.
+
+| Teste | O que é | O que revela |
+|---|---|---|
+| **Sem açúcar nenhum** | Expressão basal, sem indutor | Se o óperon está **ligado sem motivo** (constitutivo): lacI⁻ ou lacOᶜ |
+| **Com lactose** | A indução natural. A lactose entra pela LacY, e a β-galactosidase a converte em **alolactose**, que solta o repressor | Se a célula consegue se induzir sozinha. Depende de LacY e LacZ funcionarem e de não haver glicose (CAP-AMPc ativa) |
+| **Com IPTG** | O **indutor gratuito**: liga-se direto ao repressor, entra sem precisar da permease e não é consumido | Separa defeito **estrutural** de defeito **regulatório**. Em lacZ⁻ ou lacY⁻, o IPTG liga o óperon e a proteína que sobra aparece. No super-repressor lacIˢ, nem o IPTG funciona |
+| **F′ lac⁺ sem indutor** | **Merodiploide**: a célula recebe um plasmídeo F′ com uma segunda cópia selvagem do óperon lac. É o **teste cis-trans** | Se a mutação age **em trans** (produto difusível, como o repressor) ou **em cis** (só no próprio DNA, como o operador). lacI⁻ volta ao normal, porque o repressor do F′ desliga as duas cópias. lacOᶜ continua ligado, porque o operador defeituoso não é corrigido por nada que venha de fora |
+| **F′ lac⁺ com IPTG** | O merodiploide induzido | **Complementação**: se a cópia do F′ consegue fazer o que falta. Corrige lacZ⁻ e lacY⁻. Num mutante **dominante** (lacIˢ), o super-repressor bloqueia também o F′ |
+| **Lactose + AMPc no meio** | Fornece o sinal do controle positivo | Separa os dois defeitos de CAP. **cya⁻** (falta a enzima que faz AMPc) volta ao normal; **crp⁻** (falta a própria proteína CAP) não |
+| **Com Trp / sem Trp** | Crescimento e enzimas da via com e sem triptofano no meio | **Repressão** (o Trp é correpressor do TrpR), **atenuação** (o grampo do líder) e **auxotrofia** (não cresce sem Trp) |
+
+**Como cada mutante aparece no óperon lac** (β-galactosidase / permease; quando as duas são iguais, um valor só). Legenda: — nenhuma, + baixa, ++ média, +++ alta.
+
+| Linhagem | Sem açúcar | Lactose | IPTG | F′ sem indutor | F′ + IPTG | Lactose + AMPc |
+|---|---|---|---|---|---|---|
+| Selvagem | — | +++ | +++ | + | +++ | +++ |
+| lacI⁻ | +++ | +++ | +++ | + | +++ | +++ |
+| lacOᶜ | +++ | +++ | +++ | +++ | +++ | +++ |
+| lacIˢ | — | — | + | + | ++ | — |
+| lacZ⁻ | — | — | — / +++ | — / + | +++ | — |
+| lacY⁻ | — | ++ / — | +++ / — | + / — | +++ | ++ / — |
+| crp⁻ | — | — | + | — | ++ | — |
+| cya⁻ | — | — | + | — | ++ | +++ |
+
+**No óperon trp:**
+
+| Linhagem | Com Trp | Sem Trp |
+|---|---|---|
+| Selvagem | enzimas —, cresce | enzimas ++, cresce |
+| trpR⁻ | enzimas ++, cresce | enzimas ++, cresce |
+| trpL∆ (sem atenuador) | enzimas —, cresce | enzimas +++, cresce |
+| trpE⁻ | enzimas —, cresce | enzimas +++, **não cresce** |
+
+**Os pares que confundem, e o teste que os separa:**
+- **Sempre ligado (lacI⁻ ou lacOᶜ):** F′ sem indutor. lacI⁻ é recessiva, e o repressor do F′ age em trans e corrige. lacOᶜ é **cis-dominante** e continua ligado.
+- **A lactose não liga (lacIˢ):** nem o IPTG liga de verdade, e o F′ também não volta ao normal. É um super-repressor **dominante**, que não reconhece o indutor.
+- **A lactose não rende energia (lacZ⁻ ou lacY⁻):** IPTG. Em lacZ⁻ aparece permease, mas não β-galactosidase; em lacY⁻, o contrário. O F′ com IPTG complementa os dois.
+- **Lac fraco mesmo sem glicose (crp⁻ ou cya⁻):** AMPc no meio. Só a cya⁻ volta, porque a CAP está boa e faltava apenas o sinal. Na crp⁻ falta a própria CAP, e o F′ lac também não ajuda, porque o gene *crp* fica em outra região do cromossomo.
+- **Enzimas do Trp altas mesmo com Trp (trpR⁻ ou trpL∆):** com Trp no meio. Na trpR⁻ as enzimas continuam altas, sem repressor. Na trpL∆ o repressor ainda desliga com Trp, mas sem Trp a expressão sobe mais do que no selvagem, porque falta a atenuação.
+- **Não cresce sem Trp (trpE⁻):** é auxotrófica, porque falta a primeira enzima da via.
+
+Cada palpite errado custa ATP e mostra qual teste já feito contradiz a hipótese. Os valores vêm de um modelo simplificado do jogo, feito para mostrar as diferenças qualitativas entre os mutantes, não números de bancada.
 
 ### ▶️ [Jogar o Operon](https://piergiorge.github.io/Vale-do-Sereno/operon/)
 
@@ -302,26 +346,6 @@ A reviravolta que atravessa o jogo é a genética forense numa **população fun
 
 ---
 
-# 🗼 Torre 3
-
-**Guarda-parque numa torre de vigia, numa tela só.** No estilo de *Do Not Feed the Monkeys*: seis câmeras da Reserva do Sereno, um mapa, sensores de temperatura, umidade, som e movimento, e um rádio que não para. O relógio corre das 18:00 às 06:00 (dá para pausar e acelerar). Quando algo aparece numa câmera, você decide quem sai: brigada de incêndio, patrulha de guarda-parques, polícia ambiental, resgate de fauna, coleta de amostra para o laboratório, Vigilância em Saúde ou ninguém (só registrar). As equipes são poucas e levam tempo para ir e voltar.
-
-| O que aparece | O que ensina |
-|---|---|
-| Fumaça, neblina, fogueira de quintal | Ler sensores: fogo é quente e seco e sobe em coluna; neblina é fria, com umidade perto de 100%. O fogo cresce e pula de área |
-| Luzes azuis no brejo ("Boitatá") | Fogo-fátuo: gases da decomposição em áreas alagadas |
-| Pegadas "viradas" ("Curupira") | O rastro do tamanduá-bandeira, que anda com as garras dobradas |
-| Bugios mortos | Primatas como sentinelas da febre amarela silvestre; quem transmite é o mosquito |
-| Tamanduá atropelado, lobo-guará com arame | Quando resgatar fauna |
-| Onça com filhotes, filhote de ave no chão | Quando **não** intervir |
-| Caçador armado, laço com ceva, motosserra, balsa de garimpo | Crimes ambientais, segurança da equipe, mercúrio e biomagnificação |
-
-**Temporada.** Cinco turnos roteirizados (Primeira noite, Tiros no escuro, Luzes no brejo, Rio barrento, Noite seca) e **plantão livre**, sorteado a cada partida. No fim de cada turno, um relatório mostra o que aconteceu em cada ocorrência e explica a biologia por trás. As amostras vão para o Laboratório de Perícia do Vale, o mesmo do Laudo: a carne apreendida é identificada pelo gene COI, e a água do garimpo, testada para mercúrio. Barra de espaço pausa; teclas 1 a 6 trocam de câmera.
-
-### ▶️ [Jogar o Torre 3](https://piergiorge.github.io/Vale-do-Sereno/torre-3/)
-
----
-
 ## Detalhes técnicos
 
 Cada jogo é um único arquivo HTML com JavaScript puro, sem bibliotecas nem dependências externas. Os sons e a música são gerados por código (Web Audio API). Os gráficos do Locus Astra são SVG gerados a partir do fenótipo de cada criatura.
@@ -338,7 +362,6 @@ heranca/index.html
 operon/index.html
 fundadores/index.html
 Laudo/index.html
-torre-3/index.html
 ```
 
 No Fita Molde:
