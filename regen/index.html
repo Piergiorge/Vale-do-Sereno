@@ -1,1 +1,1027 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>REGEN · Vale do Sereno</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #0c120c; overflow: hidden; }
+  body { display: flex; align-items: center; justify-content: center; font-family: monospace;
+    background: radial-gradient(ellipse at 50% 40%, #1c2a1c 0%, #0a100a 70%); }
+  #mon { position: relative; }
+  .bezel { background: linear-gradient(180deg, #5f6b4f 0%, #4f5b41 60%, #414b35 100%); border-radius: 22px;
+    padding: 4.5% 5% 2% 5%; box-shadow: 0 18px 40px rgba(0,0,0,.6), inset 0 2px 0 #7d8a6a, inset 0 -3px 0 #2c3424; }
+  .screen { position: relative; border-radius: 16px / 12px; overflow: hidden; background: #000;
+    box-shadow: 0 0 0 4px #5a5446, 0 0 0 7px #2b2820, inset 0 0 40px rgba(0,0,0,.8); }
+  #scr { display: block; width: 100%; height: auto; image-rendering: pixelated; image-rendering: crisp-edges;
+    filter: saturate(1.15) contrast(1.05); touch-action: none; }
+  @media (pointer: fine) { #scr { cursor: none; } }
+  .scan { position: absolute; inset: 0; pointer-events: none;
+    background: repeating-linear-gradient(to bottom, rgba(0,0,0,.22) 0px, rgba(0,0,0,.22) 1px, transparent 1px, transparent 3px); }
+  .glare { position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(ellipse at 30% 15%, rgba(255,255,255,.08) 0%, transparent 45%),
+                radial-gradient(ellipse at 50% 50%, transparent 60%, rgba(0,0,0,.45) 100%);
+    animation: flick 0.12s infinite; }
+  @keyframes flick { 0% { opacity: .97 } 50% { opacity: 1 } 100% { opacity: .98 } }
+  @media (max-width: 600px) {
+    .bezel { padding: 3% 3% 1.5% 3%; border-radius: 14px; }
+    .screen { border-radius: 6px; }
+    .panel { font-size: 9px; letter-spacing: 1px; padding-top: 6px; }
+  }
+  .panel { display: flex; justify-content: space-between; align-items: center; padding: 10px 4px 2px;
+    color: #c8d0a8; font: bold 12px monospace; letter-spacing: 3px; }
+  .led { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #3cf05a; box-shadow: 0 0 6px #3cf05a; margin-left: 8px; }
+  .vents { width: 30%; height: 8px; background: repeating-linear-gradient(90deg, #2c3424 0 3px, transparent 3px 7px); border-radius: 2px; }
+</style>
+</head>
+<body>
+<div id="mon">
+  <div class="bezel">
+    <div class="screen">
+      <canvas id="scr" width="320" height="240"></canvas>
+      <div class="scan"></div>
+      <div class="glare"></div>
+    </div>
+    <div class="panel"><span>VIVEIRO DO SERENO</span><span class="vents"></span><span>SOL<span class="led"></span></span></div>
+  </div>
+</div>
+<script>
+(() => {
+'use strict';
+  // =====================================================================
+  // FONTE BITMAP 5x7 (com acentos e descendentes) e utilitários de texto
+  // célula: 5 de largura, 11 de altura (2 de acento, 7 de corpo, 2 de descendente)
+  // =====================================================================
+  const CW = 6, LH = 11;
+  const G = {};
+  const def = (ch, s) => { G[ch] = s.split('/'); };
+  // maiúsculas
+  def('A', '.###./#...#/#...#/#####/#...#/#...#/#...#');
+  def('B', '####./#...#/#...#/####./#...#/#...#/####.');
+  def('C', '.###./#...#/#..../#..../#..../#...#/.###.');
+  def('D', '####./#...#/#...#/#...#/#...#/#...#/####.');
+  def('E', '#####/#..../#..../####./#..../#..../#####');
+  def('F', '#####/#..../#..../####./#..../#..../#....');
+  def('G', '.###./#...#/#..../#.###/#...#/#...#/.####');
+  def('H', '#...#/#...#/#...#/#####/#...#/#...#/#...#');
+  def('I', '.###./..#../..#../..#../..#../..#../.###.');
+  def('J', '..###/...#./...#./...#./...#./#..#./.##..');
+  def('K', '#...#/#..#./#.#../##.../#.#../#..#./#...#');
+  def('L', '#..../#..../#..../#..../#..../#..../#####');
+  def('M', '#...#/##.##/#.#.#/#.#.#/#...#/#...#/#...#');
+  def('N', '#...#/#...#/##..#/#.#.#/#..##/#...#/#...#');
+  def('O', '.###./#...#/#...#/#...#/#...#/#...#/.###.');
+  def('P', '####./#...#/#...#/####./#..../#..../#....');
+  def('Q', '.###./#...#/#...#/#...#/#.#.#/#..#./.##.#');
+  def('R', '####./#...#/#...#/####./#.#../#..#./#...#');
+  def('S', '.####/#..../#..../.###./....#/....#/####.');
+  def('T', '#####/..#../..#../..#../..#../..#../..#..');
+  def('U', '#...#/#...#/#...#/#...#/#...#/#...#/.###.');
+  def('V', '#...#/#...#/#...#/#...#/#...#/.#.#./..#..');
+  def('W', '#...#/#...#/#...#/#.#.#/#.#.#/#.#.#/.#.#.');
+  def('X', '#...#/#...#/.#.#./..#../.#.#./#...#/#...#');
+  def('Y', '#...#/#...#/.#.#./..#../..#../..#../..#..');
+  def('Z', '#####/....#/...#./..#../.#.../#..../#####');
+  // minúsculas (altura-x nas linhas 2 a 6; descendentes nas 7 e 8)
+  def('a', '...../...../.###./....#/.####/#...#/.####');
+  def('b', '#..../#..../####./#...#/#...#/#...#/####.');
+  def('c', '...../...../.###./#..../#..../#...#/.###.');
+  def('d', '....#/....#/.####/#...#/#...#/#...#/.####');
+  def('e', '...../...../.###./#...#/#####/#..../.###.');
+  def('f', '..##./.#..#/.#.../###../.#.../.#.../.#...');
+  def('g', '...../...../.####/#...#/#...#/#...#/.####/....#/.###.');
+  def('h', '#..../#..../#.##./##..#/#...#/#...#/#...#');
+  def('i', '..#../...../.##../..#../..#../..#../.###.');
+  def('ı', '...../...../.##../..#../..#../..#../.###.');
+  def('j', '...#./...../..##./...#./...#./...#./...#./#..#./.##..');
+  def('k', '#..../#..../#..#./#.#../##.../#.#../#..#.');
+  def('l', '.##../..#../..#../..#../..#../..#../.###.');
+  def('m', '...../...../##.#./#.#.#/#.#.#/#.#.#/#.#.#');
+  def('n', '...../...../#.##./##..#/#...#/#...#/#...#');
+  def('o', '...../...../.###./#...#/#...#/#...#/.###.');
+  def('p', '...../...../####./#...#/#...#/#...#/####./#..../#....');
+  def('q', '...../...../.####/#...#/#...#/#...#/.####/....#/....#');
+  def('r', '...../...../#.##./##..#/#..../#..../#....');
+  def('s', '...../...../.####/#..../.###./....#/####.');
+  def('t', '.#.../.#.../###../.#.../.#.../.#..#/..##.');
+  def('u', '...../...../#...#/#...#/#...#/#..##/.##.#');
+  def('v', '...../...../#...#/#...#/#...#/.#.#./..#..');
+  def('w', '...../...../#...#/#...#/#.#.#/#.#.#/.#.#.');
+  def('x', '...../...../#...#/.#.#./..#../.#.#./#...#');
+  def('y', '...../...../#...#/#...#/#...#/#...#/.####/....#/.###.');
+  def('z', '...../...../#####/...#./..#../.#.../#####');
+  // dígitos
+  def('0', '.###./#...#/#..##/#.#.#/##..#/#...#/.###.');
+  def('1', '..#../.##../..#../..#../..#../..#../.###.');
+  def('2', '.###./#...#/....#/...#./..#../.#.../#####');
+  def('3', '#####/...#./..#../...#./....#/#...#/.###.');
+  def('4', '...#./..##./.#.#./#..#./#####/...#./...#.');
+  def('5', '#####/#..../####./....#/....#/#...#/.###.');
+  def('6', '..##./.#.../#..../####./#...#/#...#/.###.');
+  def('7', '#####/....#/...#./..#../.#.../.#.../.#...');
+  def('8', '.###./#...#/#...#/.###./#...#/#...#/.###.');
+  def('9', '.###./#...#/#...#/.####/....#/...#./.##..');
+  // pontuação e símbolos
+  def(' ', '...../...../...../...../...../...../.....');
+  def('.', '...../...../...../...../...../.##../.##..');
+  def(',', '...../...../...../...../...../.##../..#../.#...');
+  def(':', '...../.##../.##../...../.##../.##../.....');
+  def(';', '...../.##../.##../...../.##../..#../.#...');
+  def('!', '..#../..#../..#../..#../..#../...../..#..');
+  def('?', '.###./#...#/....#/...#./..#../...../..#..');
+  def('-', '...../...../...../.###./...../...../.....');
+  def('—', '...../...../...../#####/...../...../.....');
+  def('+', '...../..#../..#../#####/..#../..#../.....');
+  def('(', '...#./..#../.#.../.#.../.#.../..#../...#.');
+  def(')', '.#.../..#../...#./...#./...#./..#../.#...');
+  def('/', '....#/....#/...#./..#../.#.../#..../#....');
+  def("'", '..#../..#../.#.../...../...../...../.....');
+  def('"', '.#.#./.#.#./...../...../...../...../.....');
+  def('%', '##..#/##..#/...#./..#../.#.../#..##/#..##');
+  def('$', '..#../.####/#.#../.###./..#.#/####./..#..');
+  def('#', '.#.#./.#.#./#####/.#.#./#####/.#.#./.#.#.');
+  def('=', '...../...../#####/...../#####/...../.....');
+  def('*', '...../#.#.#/.###./#####/.###./#.#.#/.....');
+  def('<', '...#./..#../.#.../#..../.#.../..#../...#.');
+  def('>', '.#.../..#../...#./....#/...#./..#../.#...');
+  def('[', '.###./.#.../.#.../.#.../.#.../.#.../.###.');
+  def(']', '.###./...#./...#./...#./...#./...#./.###.');
+  def('_', '...../...../...../...../...../...../#####');
+  def('×', '...../#...#/.#.#./..#../.#.#./#...#/.....');
+  def('º', '.##../#..#./.##../...../####./...../.....');
+  def('ª', '.##../..#../###../#.#../.###./...../.....');
+  def('·', '...../...../...../..#../...../...../.....');
+  def('°', '.##../#..#./.##../...../...../...../.....');
+  def('▶', '#..../##.../###../####./###../##.../#....');
+  def('◀', '....#/...##/..###/.####/..###/...##/....#');
+  def('▲', '...../..#../.###./#####/...../...../.....');
+  def('▼', '...../#####/.###./..#../...../...../.....');
+  def('█', '#####/#####/#####/#####/#####/#####/#####');
+  def('✓', '...../....#/...#./#.#../.#.../...../.....');
+  def('✗', '...../#...#/.#.#./..#../.#.#./#...#/.....');
+  def('♂', '..###/....#/.##.#/#..#./#..#./.##../.....');
+  def('♀', '.###./#...#/#...#/.###./..#../.###./..#..');
+  def('…', '...../...../...../...../...../#.#.#/.....');
+  def('µ', '...../...../#...#/#...#/#...#/##.##/#.##./#..../#....');
+  def('²', '.##../...#./..#../.###./...../...../.....');
+  def('³', '.##../...#./..#../...#./.##../...../.....');
+  def('≥', '.#.../..#../...#./..#../.#.../...../#####');
+  def('~', '...../...../.#..#/#.##./...../...../.....');
+  def('&', '.##../#..#./#.#../.#.../#.#.#/#..#./.##.#');
+  def('♪', '..##./..#.#/..#../..#../###../###../.....');
 
+  const ACC = { acute: ['...#.', '..#..'], grave: ['.#...', '..#..'], circ: ['..#..', '.#.#.'], tilde: ['.##.#', '#..#.'], diaer: ['.....', '.#.#.'], ced: ['..#..', '.#...'] };
+  const COMP = {
+    'á': ['a', 'acute'], 'à': ['a', 'grave'], 'â': ['a', 'circ'], 'ã': ['a', 'tilde'], 'é': ['e', 'acute'], 'ê': ['e', 'circ'],
+    'í': ['ı', 'acute'], 'ó': ['o', 'acute'], 'ô': ['o', 'circ'], 'õ': ['o', 'tilde'], 'ú': ['u', 'acute'], 'ü': ['u', 'diaer'], 'ç': ['c', 'ced'],
+    'Á': ['A', 'acute'], 'À': ['A', 'grave'], 'Â': ['A', 'circ'], 'Ã': ['A', 'tilde'], 'É': ['E', 'acute'], 'Ê': ['E', 'circ'],
+    'Í': ['I', 'acute'], 'Ó': ['O', 'acute'], 'Ô': ['O', 'circ'], 'Õ': ['O', 'tilde'], 'Ú': ['U', 'acute'], 'Ç': ['C', 'ced']
+  };
+  // bitmap 5x11 de um caractere
+  const BM = {};
+  function bitmap(ch) {
+    if (BM[ch]) return BM[ch];
+    const grid = Array.from({ length: 11 }, () => '.....'.split(''));
+    const put = (rows, r0) => rows.forEach((row, i) => { for (let x = 0; x < 5; x++) if (row[x] === '#' && r0 + i >= 0 && r0 + i < 11) grid[r0 + i][x] = '#'; });
+    if (COMP[ch]) {
+      const [b, a] = COMP[ch], up = b === b.toUpperCase() && b !== 'ı';
+      put(G[b], 2);
+      if (a === 'ced') put(ACC.ced, 9); else put(ACC[a], up ? 0 : 1);
+    } else put(G[ch] || G['?'], 2);
+    return (BM[ch] = grid.map(r => r.join('')));
+  }
+  // cache de glifos por cor
+  const GC = new Map();
+  function glyph(ch, col) {
+    const k = col + ch;
+    let c = GC.get(k);
+    if (c) return c;
+    c = document.createElement('canvas'); c.width = 5; c.height = 11;
+    const g = c.getContext('2d'); g.fillStyle = col;
+    bitmap(ch).forEach((row, y) => { for (let x = 0; x < 5; x++) if (row[x] === '#') g.fillRect(x, y, 1, 1); });
+    GC.set(k, c);
+    return c;
+  }
+  function text(g, s, x, y, col = '#000', sc = 1) {
+    s = String(s);
+    for (let i = 0; i < s.length; i++) {
+      const ch = s[i];
+      if (ch !== ' ') g.drawImage(glyph(ch, col), Math.round(x + i * CW * sc), Math.round(y), 5 * sc, 11 * sc);
+    }
+  }
+  const tw = s => String(s).length * CW;
+  function textC(g, s, cx, y, col, sc = 1) { text(g, s, Math.round(cx - String(s).length * CW * sc / 2 + sc / 2), y, col, sc); }
+  // quebra em linhas de no máximo n caracteres
+  function wrap(s, n) {
+    const out = [];
+    for (const para of String(s).split('\n')) {
+      if (!para.length) { out.push(''); continue; }
+      let line = '';
+      for (const w of para.split(' ')) {
+        if (!line.length) line = w;
+        else if ((line + ' ' + w).length <= n) line += ' ' + w;
+        else { out.push(line); line = w; }
+        while (line.length > n) { out.push(line.slice(0, n)); line = line.slice(n); }
+      }
+      out.push(line);
+    }
+    return out;
+  }
+
+  // =====================================================================
+  // BASE: paleta, desenho, aleatório com semente, glifos extras
+  // =====================================================================
+  const P = {
+    k: '#000000', d: '#3c3c3c', g: '#7c7c7c', l: '#bcbcbc', w: '#f8f8f8',
+    nb: '#0000bc', b: '#0058f8', lb: '#3cbcfc', pc: '#a4e4fc', tl: '#004058', tl2: '#008888',
+    dg: '#005800', gr: '#00a800', lg: '#58d854', lime: '#b8f818',
+    dr: '#a81000', r: '#f83800', or: '#e45c10', lo: '#fca044', y: '#f8b800', py: '#fce0a8',
+    br: '#503000', ol: '#ac7c00', sk: '#f0d0b0', pk: '#f878f8', mg: '#d800cc', pu: '#6844fc', dp: '#940084',
+    // tons noturnos para as câmeras
+    n0: '#06081a', n1: '#0c1430', n2: '#142048', n3: '#1c2c3c', n4: '#0f2418', n5: '#183820', n6: '#24301c', n7: '#2c2416', n8: '#3a3020',
+    cons: '#1d2a1d', cons2: '#2b3d2b', amb: '#f8b800'
+  };
+  const R = (g, x, y, w, h, c) => { g.fillStyle = c; g.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h)); };
+  const dith = (g, x, y, w, h, c) => { g.fillStyle = c; x = Math.round(x); y = Math.round(y); for (let j = 0; j < h; j++) for (let i = (j % 2); i < w; i += 2) g.fillRect(x + i, y + j, 1, 1); };
+  const dith4 = (g, x, y, w, h, c) => { g.fillStyle = c; x = Math.round(x); y = Math.round(y); for (let j = 0; j < h; j += 2) for (let i = (j % 4) ? 2 : 0; i < w; i += 4) g.fillRect(x + i, y + j, 1, 1); };
+
+  function rng(seed) { let a = seed >>> 0; return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  const rpick = (r, a) => a[Math.floor(r() * a.length)];
+  const rint = (r, a, b) => a + Math.floor(r() * (b - a + 1));
+  const rfl = (r, a, b) => a + r() * (b - a);
+  function rshuffle(r, a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+  // ruído determinístico (para piscar, cintilar)
+  const hsh = (a, b = 0) => { const s = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return s - Math.floor(s); };
+
+  // glifos extras
+  def('|', '..#../..#../..#../..#../..#../..#../..#..');
+  def('●', '...../.###./#####/#####/#####/.###./.....');
+  def('→', '...../..#../...#./#####/...#./..#../.....');
+  def('←', '...../..#../.#.../#####/.#.../..#../.....');
+  def('⌛', '#####/#...#/.#.#./..#../.#.#./#.#.#/#####');
+  def('☼', '#.#.#/.###./##.##/#...#/##.##/.###./#.#.#');
+
+  const CAMW = 320;
+  function blob(g, cx, cy, rx, ry, col) { for (let j = -ry; j <= ry; j++) { const w = Math.round(rx * Math.sqrt(1 - (j * j) / (ry * ry + .01))); R(g, cx - w, cy + j, w * 2 + 1, 1, col); } }
+  function ridge(g, X, Y0, pts, col, bottom, W = CAMW) { for (let x = 0; x < W; x++) { let y = 0; for (let i = 0; i < pts.length - 1; i++) { const [x0, y0] = pts[i], [x1, y1] = pts[i + 1]; if (x >= x0 && x <= x1) y = y0 + (y1 - y0) * (x - x0) / Math.max(1, x1 - x0); } R(g, X + x, Y0 + y, 1, bottom - y, col); } }
+
+  // =====================================================================
+  // MOTOR: console da torre, som, entrada, simulação do turno, telas
+  // =====================================================================
+  const VW = 320, VH = 240;
+  const cv = document.getElementById('scr');
+  const g = cv.getContext('2d');
+  g.imageSmoothingEnabled = false;
+  const HOUR = 24;              // segundos reais por hora de jogo, na velocidade 1x
+  const SPEEDS = [0, 1, 3];
+  const SHIFT = 12;             // 18:00 às 06:00
+
+  let S = { scene: 'title', t: 0, boot: 0, sc: {}, scMax: {}, clock: 0 };
+
+  // ---------------- som ----------------
+  let AC = null, mute = false;
+  try { mute = localStorage.getItem('regen-mudo') === '1'; } catch (e) {}
+  function ensureAC() { try { AC = AC || new (window.AudioContext || window.webkitAudioContext)(); if (AC.state === 'suspended') AC.resume(); } catch (e) {} return AC; }
+  function beep(f, d = .06, type = 'square', v = .045, t0 = 0) {
+    if (mute) return;
+    try {
+      ensureAC();
+      const t = AC.currentTime + t0, o = AC.createOscillator(), gn = AC.createGain();
+      o.type = type; o.frequency.setValueAtTime(f, t);
+      gn.gain.setValueAtTime(v, t); gn.gain.exponentialRampToValueAtTime(.0001, t + d);
+      o.connect(gn); gn.connect(AC.destination); o.start(t); o.stop(t + d + .02);
+    } catch (e) {}
+  }
+  function noise(d = .12, f = 1800, v = .05, t0 = 0) {
+    if (mute) return;
+    try {
+      ensureAC();
+      const len = Math.ceil(AC.sampleRate * d), buf = AC.createBuffer(1, len, AC.sampleRate), dd = buf.getChannelData(0);
+      for (let i = 0; i < len; i++) dd[i] = (Math.random() * 2 - 1) * (1 - i / len);
+      const src = AC.createBufferSource(); src.buffer = buf;
+      const bp = AC.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = f; bp.Q.value = 1.2;
+      const gn = AC.createGain(); gn.gain.value = v; src.connect(bp); bp.connect(gn); gn.connect(AC.destination); src.start(AC.currentTime + t0);
+    } catch (e) {}
+  }
+  const sfx = {
+    click: () => beep(1400, .025, 'square', .03),
+    cam: () => noise(.09, 2600, .035),
+    radio: () => { noise(.14, 1500, .05); beep(1760, .05, 'square', .025, .15); },
+    alert: () => { [880, 660, 880, 660].forEach((f, i) => beep(f, .09, 'square', .04, i * .1)); },
+    send: () => { beep(660, .05); beep(990, .07, 'square', .04, .05); },
+    err: () => beep(140, .2, 'sawtooth', .05),
+    good: () => { [523, 659, 784, 1046, 784, 1046].forEach((f, i) => beep(f, .1, 'square', .04, i * .09)); },
+    bad: () => { [392, 330, 262, 196].forEach((f, i) => beep(f, .16, 'square', .04, i * .14)); },
+    boot: () => { [262, 330, 392, 523].forEach((f, i) => beep(f, .5, 'triangle', .05, i * .05)); },
+    open: () => { beep(660, .05); beep(990, .07, 'square', .04, .05); }
+  };
+
+  // ---------------- música: "Sereno da Torre" (viola e flauta, mi dórico) ----------------
+  const midiF = n => 440 * Math.pow(2, (n - 69) / 12);
+  const MUS = (() => {
+    let X = null, B = null, step = 0, next = 0, live = null;
+    function reverb(ctx, secs = 3.2, dec = 2.6) {
+      const len = Math.floor(ctx.sampleRate * secs), buf = ctx.createBuffer(2, len, ctx.sampleRate);
+      for (let ch = 0; ch < 2; ch++) { const d = buf.getChannelData(ch); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, dec); }
+      const c = ctx.createConvolver(); c.buffer = buf; return c;
+    }
+    function mkBus(ctx, dest, vol) {
+      const bus = ctx.createGain(); bus.gain.value = vol;
+      const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 40;
+      const dry = ctx.createGain(); dry.gain.value = .7; const wet = ctx.createGain(); wet.gain.value = .5;
+      const rv = reverb(ctx), comp = ctx.createDynamicsCompressor(); comp.threshold.value = -18; comp.ratio.value = 3;
+      bus.connect(hp); hp.connect(dry); hp.connect(rv); rv.connect(wet); dry.connect(comp); wet.connect(comp); comp.connect(dest);
+      return bus;
+    }
+    function v(f, t, d, o = {}) {
+      const a = o.a ?? .02, r = o.r ?? .4, vol = o.vol ?? .1, end = t + d + r;
+      const gn = X.createGain();
+      gn.gain.setValueAtTime(.0001, t); gn.gain.linearRampToValueAtTime(vol, t + a);
+      if (o.decay) gn.gain.exponentialRampToValueAtTime(Math.max(.0001, vol * .002), t + o.decay); else gn.gain.setValueAtTime(vol, t + Math.max(a, d));
+      gn.gain.exponentialRampToValueAtTime(.0001, end);
+      let out = gn;
+      if (o.lp) { const f2 = X.createBiquadFilter(); f2.type = 'lowpass'; f2.frequency.value = o.lp; gn.connect(f2); out = f2; }
+      if (X.createStereoPanner && o.pan) { const p = X.createStereoPanner(); p.pan.value = o.pan; out.connect(p); out = p; }
+      out.connect(B);
+      let lg = null;
+      if (o.vib) { const l = X.createOscillator(); l.frequency.value = o.vib[0]; lg = X.createGain(); lg.gain.value = f * (Math.pow(2, o.vib[1] / 1200) - 1); l.connect(lg); l.start(t + (o.vd || 0)); l.stop(end + .05); }
+      for (const det of (o.det || [0])) { const os = X.createOscillator(); os.type = o.w || 'sine'; os.frequency.value = f; os.detune.value = det; if (lg) lg.connect(os.frequency); os.connect(gn); os.start(t); os.stop(end + .05); }
+    }
+    function chirp(t, vol) {
+      for (let k = 0; k < 3; k++) {
+        const len = Math.ceil(X.sampleRate * .018), buf = X.createBuffer(1, len, X.sampleRate), d = buf.getChannelData(0);
+        for (let i = 0; i < len; i++) d[i] = Math.sin(i / X.sampleRate * 2 * Math.PI * (3200 + k * 600)) * Math.sin(Math.PI * i / len);
+        const src = X.createBufferSource(); src.buffer = buf; const gn = X.createGain(); gn.gain.value = vol;
+        let out = gn; if (X.createStereoPanner) { const p = X.createStereoPanner(); p.pan.value = .6; gn.connect(p); out = p; }
+        src.connect(gn); out.connect(B); src.start(t + k * .045);
+      }
+    }
+    const I = {
+      viola: (n, t, vol = .07, pan = 0) => v(midiF(n), t, .3, { w: 'triangle', det: [-9, 9], a: .004, decay: 1.1, r: .5, vol, pan, lp: 2600 }),
+      bass: (n, t, d) => v(midiF(n), t, d, { w: 'sine', a: .06, r: 1, vol: .17 }),
+      pad: (ns, t, d) => ns.forEach((n, i) => v(midiF(n), t, d, { w: 'triangle', det: [-5, 6], a: 1.4, r: 1.8, vol: .018, lp: 900, pan: i % 2 ? .35 : -.35 })),
+      flute: (n, t, d) => { v(midiF(n), t, d, { w: 'sine', a: .09, r: .6, vol: .1, vib: [5, 14], vd: .2 }); v(midiF(n + 12), t, d, { w: 'sine', a: .1, r: .4, vol: .01 }); }
+    };
+    // mi dórico: Em A Em D | C G Am B7 ...
+    // sol maior: G D Em C | G Bm C D
+    const CH = [[43, 55, 59, 62, 67], [38, 50, 54, 57, 62], [40, 52, 55, 59, 64], [36, 48, 52, 55, 60], [43, 55, 59, 62, 67], [35, 47, 50, 54, 59], [36, 48, 52, 55, 60], [38, 50, 54, 57, 62]];
+    const PAT = [[0, 1], [1, 3], [2, 2], [3, 4], [4, 1], [5, 3], [6, 2], [7, 4]];
+    const MEL = [null, null, null, null,
+      [[0, 74, 2], [2, 71, 2], [4, 74, 2], [6, 76, 2]], [[0, 74, 4], [4, 69, 4]], [[0, 71, 2], [2, 72, 2], [4, 74, 2], [6, 71, 2]], [[0, 72, 6], [6, 74, 2]],
+      [[0, 79, 3], [3, 76, 1], [4, 74, 4]], [[0, 71, 2], [2, 74, 2], [4, 78, 4]], [[0, 76, 2], [2, 74, 2], [4, 72, 2], [6, 71, 2]], [[0, 69, 6], [6, 71, 2]],
+      [[0, 74, 3], [3, 76, 1], [4, 79, 4]], [[0, 78, 3], [3, 76, 1], [4, 74, 4]], [[0, 72, 2], [2, 71, 2], [4, 69, 4]], [[0, 67, 8]]];
+    const song = { bpm: 84, play(st, t, d) {
+      const bar = Math.floor(st / 8) % 16, s = st % 8, ch = CH[bar % 8];
+      if (s === 0) { I.bass(ch[0], t, d * 3.5); I.pad(ch.slice(1, 4), t, d * 8); }
+      if (s === 4) I.bass(ch[0] + 7, t, d * 3);
+      for (const [ss, k] of PAT) if (ss === s) I.viola(ch[k] + 12, t, s === 0 ? .07 : .045, (s % 2 ? .3 : -.25));
+      const m = MEL[bar]; if (m) for (const [ss, n, len] of m) if (ss === s) I.flute(n, t, d * len * .92);
+      if ((s === 2 || s === 6) && ((bar * 5 + s) % 7) < 2) chirp(t + d * .2, .01);
+    } };
+    function schedule() {
+      if (!live) return;
+      const sd = 60 / song.bpm / 2;
+      if (next < X.currentTime - .5) next = X.currentTime + .05;
+      while (next < X.currentTime + .3) { song.play(step, next, sd); step++; next += sd; }
+    }
+    // ---- música pré-gravada: arquivo de áudio em loop; sem arquivo, renderiza o ciclo uma vez; sem isso, ao vivo ----
+    const LOOP_STEPS = 128, LOOP_FILE = 'musica-regen.mp3', LOOP_VOL = .34;
+    async function renderCycle(sr) {
+      const sd = 60 / song.bpm / 2, L = LOOP_STEPS * sd, n = Math.round(L * sr);
+      const oc = new OfflineAudioContext(2, n + Math.ceil(sr * 4), sr), pX = X, pB = B;
+      X = oc; B = mkBus(oc, oc.destination, LOOP_VOL);
+      try { for (let st = 0; st < LOOP_STEPS; st++) song.play(st, .02 + st * sd, sd); } finally { X = pX; B = pB; }
+      const buf = await oc.startRendering();
+      for (let c = 0; c < 2; c++) { const x = buf.getChannelData(c); for (let i = n; i < x.length; i++) x[i - n] += x[i]; }
+      return { buf, n, start: 0 };
+    }
+    async function loadCycle(ctx) {
+      const res = await fetch(LOOP_FILE); if (!res.ok) throw new Error('sem arquivo');
+      const ab = await res.arrayBuffer(), buf = await new Promise((ok, no) => ctx.decodeAudioData(ab, ok, no));
+      return { buf, n: Math.round(LOOP_STEPS * 60 / song.bpm / 2 * buf.sampleRate), start: .5 };
+    }
+    async function start(ctx) {
+      if (live || !ctx) return;
+      const out = ctx.createGain(); out.gain.value = mute ? 0 : 1; out.connect(ctx.destination); live = out;
+      let r = null;
+      try { r = await loadCycle(ctx); } catch (e) { try { r = await renderCycle(22050); } catch (e2) { r = null; } }
+      if (!r) { X = ctx; B = mkBus(ctx, out, LOOP_VOL); step = 0; next = ctx.currentTime + .1; setInterval(schedule, 50); return; }
+      const src = ctx.createBufferSource(); src.buffer = r.buf; src.loop = true; src.loopStart = r.start; src.loopEnd = r.start + r.n / r.buf.sampleRate;
+      const fade = ctx.createGain(); fade.gain.setValueAtTime(.0001, ctx.currentTime); fade.gain.exponentialRampToValueAtTime(1, ctx.currentTime + 1.2);
+      src.connect(fade); fade.connect(out); src.start(0, r.start);
+      window.__musica = { arquivo: r.start > 0, segundos: +(r.n / r.buf.sampleRate).toFixed(2) };
+    }
+    function setMute(m) { if (live) live.gain.value = m ? 0 : 1; }
+    // grava o ciclo em WAV com meio segundo de folga de cada lado (para gerar o arquivo)
+    async function exportCycle() {
+      const r = await renderCycle(44100), sr = 44100, pad = Math.round(.5 * sr), n = r.n, len = n + 2 * pad, ch = [0, 1].map(c => r.buf.getChannelData(c));
+      const dv = new DataView(new ArrayBuffer(44 + len * 4)), ws = (o, t) => { for (let i = 0; i < t.length; i++) dv.setUint8(o + i, t.charCodeAt(i)); };
+      ws(0, 'RIFF'); dv.setUint32(4, 36 + len * 4, true); ws(8, 'WAVEfmt '); dv.setUint32(16, 16, true); dv.setUint16(20, 1, true); dv.setUint16(22, 2, true);
+      dv.setUint32(24, sr, true); dv.setUint32(28, sr * 4, true); dv.setUint16(32, 4, true); dv.setUint16(34, 16, true); ws(36, 'data'); dv.setUint32(40, len * 4, true);
+      let peak = 0; for (const x of ch) for (let i = 0; i < n; i++) peak = Math.max(peak, Math.abs(x[i]));
+      const k = peak > .98 ? .98 / peak : 1;
+      for (let i = 0; i < len; i++) { const j = ((i - pad) % n + n) % n; for (let c = 0; c < 2; c++) dv.setInt16(44 + i * 4 + c * 2, Math.max(-1, Math.min(1, ch[c][j] * k)) * 32767, true); }
+      const by = new Uint8Array(dv.buffer); let bin = ''; for (let i = 0; i < by.length; i += 32768) bin += String.fromCharCode.apply(null, by.subarray(i, i + 32768));
+      return { wav: btoa(bin), secs: n / sr, peak };
+    }
+    async function render(secs) {
+      const oc = new OfflineAudioContext(2, Math.ceil(44100 * secs), 44100);
+      const pX = X, pB = B; X = oc; B = mkBus(oc, oc.destination, .55);
+      const sd = 60 / song.bpm / 2; let tt = .1, st = 0;
+      while (tt < secs - 2) { song.play(st, tt, sd); st++; tt += sd; }
+      const buf = await oc.startRendering(); X = pX; B = pB; return buf;
+    }
+    return { start, setMute, render, exportCycle };
+  })();
+
+  // ---------------- entrada e interface imediata ----------------
+  const M = { x: -50, y: -50, down: false, sx: 0, sy: 0, drag: false, area: null, lastY: 0 };
+  let HITS = [], AREAS = [], OFF = 0, CLIP = null, DRAWING_MODAL = false;
+  function toLocal(e) { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) / r.width * VW, (e.clientY - r.top) / r.height * VH]; }
+  const inR = (x, y, r) => x >= r.x && y >= r.y && x < r.x + r.w && y < r.y + r.h;
+  cv.addEventListener('pointermove', e => { [M.x, M.y] = toLocal(e); if (M.down && M.area) { if (Math.abs(M.y - M.sy) > 4) M.drag = true; if (M.drag) { scrollBy(M.area, M.lastY - M.y); M.lastY = M.y; } } });
+  cv.addEventListener('pointerdown', e => { [M.x, M.y] = toLocal(e); M.down = true; M.sx = M.x; M.sy = M.y; M.lastY = M.y; M.drag = false; M.area = (AREAS.find(a => inR(M.x, M.y, a)) || {}).id || null; try { cv.setPointerCapture(e.pointerId); } catch (er) {} });
+  cv.addEventListener('pointerup', e => { [M.x, M.y] = toLocal(e); const was = M.drag; M.down = false; M.area = null; M.drag = false; if (!was) click(M.x, M.y); });
+  cv.addEventListener('wheel', e => { const a = AREAS.find(a => inR(M.x, M.y, a)); if (a) { scrollBy(a.id, e.deltaY > 0 ? 22 : -22); e.preventDefault(); } }, { passive: false });
+  function scrollBy(id, d) { S.sc[id] = Math.max(0, Math.min(S.scMax[id] || 0, (S.sc[id] || 0) + d)); }
+  function click(x, y) {
+    if (S.scene === 'title') { S.scene = 'game'; MUS.start(ensureAC()); sfx.boot(); if (S.offline) { const o = S.offline; S.offline = null; modal(`Enquanto você esteve fora (${Math.round(o.dt / 60)} min), os dispersores trabalharam: +${fmt(o.g)} sementes.`, [['OBA!', () => { S.modal = null; }]]); } return; }
+    MUS.start(ensureAC());
+    if (S.trans) return;
+    for (let i = HITS.length - 1; i >= 0; i--) { const h = HITS[i]; if (inR(x, y, h)) { sfx.click(); h.fn(); return; } }
+  }
+  function hit(x, y, w, h, fn) {
+    let r = { x, y: y - OFF, w, h, fn };
+    if (CLIP) { const x0 = Math.max(r.x, CLIP.x), y0 = Math.max(r.y, CLIP.y), x1 = Math.min(r.x + r.w, CLIP.x + CLIP.w), y1 = Math.min(r.y + r.h, CLIP.y + CLIP.h); if (x1 <= x0 || y1 <= y0) return; r = { x: x0, y: y0, w: x1 - x0, h: y1 - y0, fn }; }
+    HITS.push(r);
+  }
+  function hov(x, y, w, h) { if (S.modal && !DRAWING_MODAL) return false; if (CLIP && !inR(M.x, M.y, CLIP)) return false; const my = M.y + OFF; return M.x >= x && M.x < x + w && my >= y && my < y + h; }
+  function btn(x, y, w, h, label, fn, o = {}) {
+    const dis = o.dis, on = !dis && hov(x, y, w, h);
+    const bg = dis ? (o.dbg || '#4a564a') : (o.bg || (on ? P.lb : P.w)), fg = dis ? (o.dfg || '#8a968a') : (o.fg || P.k);
+    R(g, x, y, w, h, P.k); R(g, x + 1, y + 1, w - 2, h - 2, on && o.bg ? P.lb : bg);
+    if (!dis) { R(g, x + 1, y + h - 2, w - 2, 1, P.g); R(g, x + w - 2, y + 1, 1, h - 2, P.g); }
+    const ty = y + Math.round((h - 11) / 2);
+    if (o.left) text(g, label, x + 4, ty, fg); else textC(g, label, x + w / 2, ty, fg);
+    if (!dis && fn) hit(x, y, w, h, fn);
+  }
+  function scrollArea(id, x, y, w, h, draw) {
+    AREAS.push({ id, x, y, w, h });
+    const s = S.sc[id] || 0;
+    g.save(); g.beginPath(); g.rect(x, y, w, h); g.clip(); g.translate(0, -s);
+    const oO = OFF, oC = CLIP; OFF = s; CLIP = { x, y, w, h };
+    const ch = draw(y);
+    OFF = oO; CLIP = oC; g.restore();
+    S.scMax[id] = Math.max(0, ch - h);
+    if ((S.sc[id] || 0) > S.scMax[id]) S.sc[id] = S.scMax[id];
+    if (ch > h) {
+      const bx = x + w - 7;
+      R(g, bx, y, 7, h, '#4a564a');
+      const th = Math.max(12, h * h / ch), ty = y + 8 + (h - 16 - th) * ((S.sc[id] || 0) / Math.max(1, S.scMax[id]));
+      R(g, bx + 1, ty, 5, th, P.l);
+      btn(bx, y, 7, 8, '', () => scrollBy(id, -22)); text(g, '▲', bx + 1, y - 2, P.k);
+      btn(bx, y + h - 8, 7, 8, '', () => scrollBy(id, 22)); text(g, '▼', bx + 1, y + h - 10, P.k);
+    }
+  }
+  const lines = (s, x, y, n, col, lh = LH) => { const ls = wrap(s, n); ls.forEach((l, i) => text(g, l, x, y + i * lh, col)); return ls.length * lh; };
+  function modal(t, btns, o = {}) { S.modal = { text: t, btns, ...o }; }
+  const hhmm = c => { const m = Math.round((18 * 60 + c * 60)) % (24 * 60); return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); };
+
+
+  // =====================================================================
+  // REGENERAÇÃO · clicker/idle de sucessão ecológica (Vale do Sereno)
+  // =====================================================================
+  const GROUND = 126;            // linha do chão na cena
+  // cada área tem solo, capim, fogo, eventos e cenário próprios
+  const AREA_DEF = [
+    { n: 'Clareira da Trilha', look: 'mata', soil: 1, braq: 1, fire: 1, solo0: 3, ev: ['madeireiro', 'pesquisa', 'chuva'],
+      d: 'A clareira que queimou na noite seca. Muito sol, solo fraco e a braquiária chegando. É aqui que você aprende a sucessão.', mods: 'Área de treino: sem regras especiais.' },
+    { n: 'Encosta do Mirante', look: 'encosta', soil: .7, braq: .7, fire: 1, solo0: 0, ev: ['erosao', 'erosao', 'madeireiro', 'chuva'],
+      d: 'Morro íngreme da Serra da Bruma. Com o chão descoberto, cada chuva forte leva o solo morro abaixo. Cubra o chão depressa.', mods: 'Solo melhora 30% mais devagar. Chuva forte leva solo se a cobertura for menor que 40%.' },
+    { n: 'Margem do Rio', look: 'rio', soil: 1.2, braq: 1, fire: .5, solo0: 10, cheap: { inga: .5 }, foodMul: { inga: 2 }, ev: ['enchente', 'enchente', 'madeireiro', 'pesquisa'],
+      d: 'A mata ciliar do rio, abaixo da Mina Velha. O ingá adora a beira d\'água, mas as cheias arrastam as mudas baixas.', mods: 'Ingá pela metade do preço e com o dobro de frutos. Cheias arrastam guandu e pioneiras. Fogo mais raro.' },
+    { n: 'Borda da Vila', look: 'vila', soil: 1, braq: 1, fire: 1.2, solo0: 5, ev: ['gado', 'palmiteiro', 'palmiteiro', 'mutirao', 'madeireiro'],
+      d: 'O morro atrás das casas. Tem gente para ajudar, mas também gado solto e palmiteiros de olho na juçara.', mods: 'Gado solto e palmiteiros. A escola às vezes faz mutirão. A cerca resolve o gado.' },
+    { n: 'Pasto Velho', look: 'pasto', soil: .6, braq: 2, fire: 1.5, solo0: 0, ev: ['gado', 'gado', 'madeireiro', 'chuva'],
+      d: 'Antigo pasto abandonado: chão compactado e braquiária por toda parte. O desafio mais difícil.', mods: 'Solo 40% mais lento, braquiária em dobro, fogo mais provável e gado solto.' }
+  ];
+  const AD = () => AREA_DEF[GS.area % AREA_DEF.length];
+  const areaCap = a => Math.round(100 * (1 + .25 * a));
+
+  // plantas: luz = faixa de luz no chão (%) em que as mudas pegam; solo = matéria orgânica mínima
+  const PL = {
+    guandu: { short: 'guandu', n: 'Feijão-guandu', grp: 'adubo verde', c0: 8, cm: 1.1, w: .12, luz: [55, 100], solo: 0, seed: .15, soil: .03, st: 0, food: 0, h: 6,
+      d: 'Leguminosa de vida curta. Com bactérias nas raízes (rizóbios), fixa nitrogênio do ar e aduba o solo. Some quando a sombra chega.' },
+    embauba: { short: 'embaúba', n: 'Embaúba', grp: 'pioneira', c0: 40, cm: 1.12, w: 1, luz: [50, 100], solo: 5, food: 1, st: 1, h: 30,
+      d: 'Pioneira clássica: cresce rápido no sol, dá frutos que morcegos e aves adoram e faz a primeira sombra. Vive pouco e abre espaço para as próximas.' },
+    aroeira: { short: 'aroeira', n: 'Aroeira-pimenteira', grp: 'pioneira', c0: 110, cm: 1.12, w: .7, luz: [45, 100], solo: 10, food: 1, st: 1, h: 18,
+      d: 'Pioneira de frutinhos vermelhos, muito procurada por sabiás. Aguenta solo pobre e sol forte.' },
+    eucalipto: { short: 'eucalipto', n: 'Eucalipto', grp: 'exótica', c0: 25, cm: 1.08, w: 1.4, luz: [30, 100], solo: 0, food: 0, st: 1, h: 44, exotic: 1,
+      d: 'Exótica de crescimento rápido: faz sombra depressa, mas não alimenta a fauna nativa e não conta como floresta. Monocultura sozinha vira "deserto verde".' },
+    inga: { short: 'ingá', n: 'Ingá', grp: 'secundária inicial', c0: 450, cm: 1.13, w: 1.3, luz: [25, 75], solo: 25, food: 1.5, soil: .02, st: 2, h: 24,
+      d: 'Leguminosa de beira de rio: fixa nitrogênio e dá vagens doces que alimentam macacos, morcegos e até peixes. Precisa de meia-sombra para pegar.' },
+    ipe: { short: 'ipê', n: 'Ipê-amarelo', grp: 'secundária tardia', c0: 1300, cm: 1.13, w: 1.6, luz: [20, 70], solo: 35, food: 0, wind: .8, st: 2, h: 36,
+      d: 'Semente com asa, levada pelo vento (anemocoria): não depende de animais. Floresce sem folhas no fim do inverno.' },
+    jequitiba: { short: 'jequitibá', n: 'Jequitibá-rosa', grp: 'clímax emergente', c0: 4500, cm: 1.14, w: 3.2, luz: [0, 45], solo: 55, food: 0, wind: 3, st: 3, h: 58,
+      d: 'Gigante da Mata Atlântica, pode passar de 40 m e viver séculos. A muda só pega na sombra da mata já formada.' },
+    jucara: { short: 'juçara', n: 'Palmito-juçara', grp: 'clímax de sub-bosque', c0: 9000, cm: 1.14, w: .8, luz: [0, 40], solo: 50, food: 2.5, st: 3, h: 30,
+      d: 'Palmeira de sombra cujos frutos roxos alimentam tucanos, jacutingas e sabiás. Ameaçada pelo corte ilegal do palmito, que mata a planta.' }
+  };
+  const PL_ORDER = ['guandu', 'embauba', 'aroeira', 'eucalipto', 'inga', 'ipe', 'jequitiba', 'jucara'];
+  // fauna dispersora: atraída por estruturas, limitada pelo alimento
+  const AN = {
+    sabia: { n: 'Sabiás', diet: ['aroeira', 'embauba', 'jucara'], need: .5, rate: .5, day: 1 },
+    morcego: { n: 'Morcegos frugívoros', diet: ['embauba', 'inga'], need: .6, rate: 1.2, night: 1 },
+    tucano: { n: 'Tucanos', diet: ['jucara', 'inga'], need: 2, rate: 5, day: 1 },
+    bugio: { n: 'Bugios', diet: ['inga', 'embauba'], need: 2.2, rate: 4, day: 1 },
+    jacutinga: { n: 'Jacutingas', diet: ['jucara'], need: 2, rate: 7, day: 1 },
+    anta: { n: 'Antas', diet: ['jucara', 'inga', 'embauba'], need: 7, rate: 22, day: 1 }
+  };
+  const FA = {
+    poleiro: { n: 'Poleiro artificial', c0: 50, cm: 1.18, give: { sabia: 3 }, st: 1, d: 'Estacas com travessa: as aves pousam e deixam cair sementes. É a técnica de nucleação, barata e muito usada.' },
+    abrigo: { n: 'Abrigo para morcegos', c0: 260, cm: 1.2, give: { morcego: 4 }, st: 1, d: 'Morcegos frugívoros espalham sementes de pioneiras à noite, longe da planta-mãe.' },
+    ninho: { n: 'Caixa-ninho', c0: 2400, cm: 1.22, give: { tucano: 2 }, st: 2, d: 'Tucanos fazem ninho em ocos de árvore, raros em mata jovem. A caixa-ninho substitui o oco por enquanto.' },
+    corredor: { n: 'Corredor ecológico', c0: 12000, cm: 1.35, give: { bugio: 3, jacutinga: 2, anta: 1 }, st: 3, d: 'Faixa de mata ligando a área ao resto da reserva: por ela chegam animais grandes, que não atravessam campo aberto.' }
+  };
+  const FA_ORDER = ['poleiro', 'abrigo', 'ninho', 'corredor'];
+  const UP = {
+    luvas: { n: 'Luvas e peneira', c: 30, d: 'Coleta manual ×2.' },
+    adubo: { n: 'Compostagem', c: 500, d: 'O solo melhora duas vezes mais rápido.' },
+    aceiro: { n: 'Aceiro', c: 400, d: 'Faixa sem capim em volta da área: o fogo não entra.' },
+    viveiro: { n: 'Viveiro de mudas', c: 900, d: 'Mudas plantadas fora da luz ideal pegam 45% (antes 20%).' },
+    mutirao: { n: 'Mutirão da Vila', c: 1500, d: 'Moradores arrancam uma touceira de braquiária a cada 8 segundos.' },
+    escola: { n: 'Coleta com a escola', c: 4000, d: 'Coleta manual ×3.' },
+    sombrite: { n: 'Viveiro com sombrite', c: 9000, req: 'viveiro', d: 'Mudas fora da luz ideal pegam 70%.' },
+    banco: { n: 'Banco de sementes nativas', c: 30000, d: 'Toda a produção de sementes ×2.' }
+  };
+  UP.cerca = { n: 'Cerca contra o gado', c: 700, d: 'O gado solto não entra mais na área.' };
+  const UP_ORDER = ['luvas', 'adubo', 'aceiro', 'cerca', 'viveiro', 'mutirao', 'escola', 'sombrite', 'banco'];
+  const STAGES = ['Solo queimado', 'Campo sujo', 'Capoeira', 'Mata secundária', 'Mata madura'];
+  const DIARY = {
+    inicio: 'A área queimou na noite seca. Sem ajuda, a braquiária (capim africano) toma conta e o fogo volta todo ano. Restaurar é acelerar a sucessão ecológica: a troca gradual de espécies até a mata se fechar.',
+    guandu: PL.guandu.d, embauba: PL.embauba.d, eucalipto: PL.eucalipto.d, inga: PL.inga.d, ipe: PL.ipe.d, jequitiba: PL.jequitiba.d, jucara: PL.jucara.d,
+    poleiro: FA.poleiro.d, abrigo: FA.abrigo.d, ninho: FA.ninho.d, corredor: FA.corredor.d,
+    braq: 'Braquiária: capim africano usado em pasto. No sol forma touceiras densas que abafam as mudas e secam no inverno, virando combustível. Some quando a mata faz sombra.',
+    fogo: 'O fogo voltou pela braquiária seca. Ele mata primeiro as mudas e as pioneiras. O aceiro, uma faixa limpa em volta, impede a entrada do fogo.',
+    morte: 'Mudas morreram por não estarem na luz certa. Pioneiras precisam de sol; espécies de mata madura precisam de sombra. Cada grupo prepara o terreno para o seguinte.',
+    sombra: 'As pioneiras começaram a morrer na sombra que elas mesmas criaram. Faz parte da sucessão: viram adubo e liberam espaço para as secundárias.',
+    fome: 'Há abrigo para mais animais do que comida. A fauna é limitada pelo alimento (capacidade de suporte): plante as árvores de que eles comem.',
+    diversidade: 'Diversidade: o jogo usa o índice de Shannon (H), que cresce com o número de espécies e com o equilíbrio entre elas. Mais diversidade, mais produção.',
+    madeira: 'Madeireiros ilegais: árvores grandes como ipê e jequitibá levam décadas, às vezes séculos, para crescer. Uma noite de motosserra apaga isso. Denunciar à Polícia Ambiental é o caminho.',
+    palmito: 'O palmito-juçara só tem um caule: cortar o palmito mata a palmeira. Sem juçara, tucanos e jacutingas perdem o principal alimento do inverno.',
+    gado: 'Gado solto pisoteia e come as mudas e compacta o solo. Cercar a área é uma das primeiras medidas de qualquer restauração.',
+    erosao: 'Erosão: na encosta, a chuva forte leva a camada fértil do solo quando o chão está descoberto. Raízes e folhas no chão seguram a terra.',
+    enchente: 'Mata ciliar: as plantas da beira do rio seguram o barranco e filtram a água. Espécies de beira de rio, como o ingá, aguentam as cheias.',
+    pesquisa: 'Pesquisadores contam espécies em parcelas fixas, ano após ano. É assim que se sabe se uma restauração está funcionando.',
+    s1: 'Campo sujo: o guandu cobriu o chão e começou a adubar o solo.', s2: 'Capoeira: as pioneiras fazem a primeira sombra e trazem os dispersores.',
+    s3: 'Mata secundária: a copa fechou, o solo está rico e a braquiária sumiu na sombra.', s4: 'Mata madura: espécies de sombra, fauna grande e alta diversidade. A área está restaurada!'
+  };
+
+  // ---------------- estado ----------------
+  const fresh = (area = 0, restored = 0, diary = {}) => ({
+    seeds: 50 * restored, total: 0, pl: {}, fa: {}, up: {}, solo: AREA_DEF[area % AREA_DEF.length].solo0, intro: -1, stage: 0, area, restored, tufts: [], diary: Object.assign({ inicio: 1 }, diary), t: Date.now(), fireT: 0, mutT: 0, braqT: 0, clicks: 0
+  });
+  let GS = fresh();
+  try { const s = JSON.parse(localStorage.getItem('regen-v1') || 'null'); if (s) GS = Object.assign(fresh(), s); } catch (e) {}
+  const save = () => { GS.t = Date.now(); try { localStorage.setItem('regen-v1', JSON.stringify(GS)); } catch (e) {} };
+  S.msgs = []; S.parts = []; S.tab = 'pl'; S.mult = 1; S.newDiary = null;
+
+  const cnt = k => GS.pl[k] || 0;
+  const cap = () => areaCap(GS.area);
+  const costOf = (base, cm, n, k = 1) => { let c = 0; for (let i = 0; i < k; i++) c += base * Math.pow(cm, n + i); return Math.ceil(c); };
+  function cover() { let s = 0; for (const k of PL_ORDER) s += cnt(k) * PL[k].w; return Math.min(98, s / cap() * 100); }
+  const luz = () => 100 - cover();
+  function shannon() {
+    const xs = PL_ORDER.filter(k => !PL[k].exotic).map(cnt).filter(x => x > 0), N = xs.reduce((a, b) => a + b, 0);
+    if (!N) return 0;
+    return -xs.reduce((s, x) => s + (x / N) * Math.log(x / N), 0) * (1 - Math.min(.6, cnt('eucalipto') / Math.max(1, N + cnt('eucalipto'))));
+  }
+  const foodOf = k => (PL[k].food || 0) * ((AD().foodMul || {})[k] || 1);
+  function food(a) { return AN[a].diet.reduce((s, k) => s + cnt(k) * foodOf(k), 0); }
+  const pc0 = k => PL[k].c0 * ((AD().cheap || {})[k] || 1);
+  function fauna() {
+    const capA = {}; for (const k of FA_ORDER) for (const [a, n] of Object.entries(FA[k].give)) capA[a] = (capA[a] || 0) + n * (GS.fa[k] || 0);
+    const out = {};
+    for (const a in AN) { const c = capA[a] || 0, f = Math.floor(food(a) / AN[a].need); out[a] = { cap: c, n: Math.min(c, f), hungry: c > f }; }
+    return out;
+  }
+  const prestigeMult = () => 1 + .5 * GS.restored;
+  function rates() {
+    const F = fauna(), H = shannon(), braq = Math.max(.3, 1 - .045 * GS.tufts.length), up = (GS.up.banco ? 2 : 1) * prestigeMult();
+    let anim = 0; for (const a in AN) anim += F[a].n * AN[a].rate;
+    let plant = 0; for (const k of PL_ORDER) plant += cnt(k) * ((PL[k].seed || 0) + (PL[k].wind || 0));
+    const total = (anim + plant) * (1 + H * .35) * braq * up;
+    return { total, anim, plant, H, braq, F };
+  }
+  const clickPow = () => Math.max(1, (1 + rates().total * .03) * (GS.up.luvas ? 2 : 1) * (GS.up.escola ? 3 : 1));
+  const survival = (k) => { const p = PL[k], L = luz(); return (L >= p.luz[0] && L <= p.luz[1] && GS.solo >= p.solo) ? 1 : (GS.up.sombrite ? .7 : GS.up.viveiro ? .45 : .2); };
+  const unlocked = st => GS.stage >= st;
+
+  function note(t, c = P.lg) { S.msgs.unshift({ t, c, at: S.t }); if (S.msgs.length > 4) S.msgs.pop(); }
+  function diary(k) { if (!GS.diary[k]) { GS.diary[k] = 1; S.newDiary = { k, at: S.t }; sfx.open(); } }
+  function addSeeds(n) { GS.seeds += n; GS.total += n; }
+
+  function buyPlant(k, n) {
+    const p = PL[k], c = costOf(pc0(k), p.cm, cnt(k), n);
+    if (GS.seeds < c || !unlocked(p.st)) { sfx.err(); return; }
+    GS.seeds -= c;
+    const sv = survival(k); let ok = 0; for (let i = 0; i < n; i++) if (Math.random() < sv) ok++;
+    GS.pl[k] = cnt(k) + ok; diary(k === 'aroeira' ? 'embauba' : k);
+    if (ok < n) {
+      const L = luz(), why = L < p.luz[0] ? `sombra demais (pega com luz de ${p.luz[0]}% a ${p.luz[1]}%)` : L > p.luz[1] ? `sol demais (precisa de luz até ${p.luz[1]}%)` : `solo pobre (precisa de ${p.solo})`;
+      note(`${n - ok} de ${n} mudas de ${p.n.toLowerCase()} morreram: ${why}.`, P.lo); diary('morte'); sfx.err();
+    } else { note(`+${n} ${p.n.toLowerCase()}`); sfx.send(); }
+  }
+  function buyFa(k, n) {
+    const f = FA[k], c = costOf(f.c0, f.cm, GS.fa[k] || 0, n);
+    if (GS.seeds < c || !unlocked(f.st)) { sfx.err(); return; }
+    GS.seeds -= c; GS.fa[k] = (GS.fa[k] || 0) + n; diary(k); sfx.send();
+    const F = fauna(), hung = Object.keys(f.give).filter(a => F[a].hungry);
+    if (hung.length && S.t - (S.lastFome || -99) > 45) {
+      S.lastFome = S.t; const a = hung[0];
+      note(`Sobrou abrigo: ${AN[a].n.toLowerCase()} só ficam se tiver comida. Plante ${AN[a].diet.map(k => PL[k].short).join(', ')}.`, P.lo); diary('fome');
+    }
+  }
+  function buyUp(k) { const u = UP[k]; if (GS.up[k] || GS.seeds < u.c || (u.req && !GS.up[u.req])) { sfx.err(); return; } GS.seeds -= u.c; GS.up[k] = 1; note(u.n + ' pronto.'); sfx.good(); }
+  function cutEuc() { const n = cnt('eucalipto'); if (!n) return; GS.pl.eucalipto = 0; addSeeds(Math.round(costOf(PL.eucalipto.c0, 1, 0, n) * .5)); note(`${n} eucaliptos cortados. A madeira virou sementes nativas.`, P.y); sfx.send(); }
+
+  // ---------------- regras do estágio ----------------
+  function reqs() {
+    const F = fauna(), types = Object.values(F).filter(f => f.n > 0).length, H = shannon();
+    return [
+      [['5 feijões-guandu', cnt('guandu') >= 5]],
+      [['10 pioneiras nativas (embaúba, aroeira)', cnt('embauba') + cnt('aroeira') >= 10], ['solo 25', GS.solo >= 25]],
+      [['cobertura 55%', cover() >= 55], ['10 ingás ou ipês', cnt('inga') + cnt('ipe') >= 10], ['solo 50', GS.solo >= 50]],
+      [['4 jequitibás', cnt('jequitiba') >= 4], ['8 palmitos-juçara', cnt('jucara') >= 8], ['4 tipos de fauna', types >= 4], ['diversidade H 1,25', H >= 1.25], ['nenhum eucalipto', cnt('eucalipto') === 0]]
+    ];
+  }
+  function checkStage() {
+    if (GS.stage >= 4) return;
+    const r = reqs()[GS.stage];
+    if (r.every(x => x[1])) { GS.stage++; diary('s' + GS.stage); note('Nova fase: ' + STAGES[GS.stage] + '!', P.y); sfx.good(); if (GS.stage >= 2) diary('diversidade'); }
+  }
+  function restore() {
+    const d = GS.diary, a = GS.area + 1, r = GS.restored + 1;
+    GS = fresh(a, r, d); S.msgs = []; S.ev = null; note(`Nova área: ${AD().n}. Produção ×${prestigeMult().toFixed(1)}.`, P.y); save(); introArea();
+  }
+
+  // ---------------- eventos ----------------
+  // invasores: aparecem na cena e precisam ser clicados antes do tempo acabar
+  const EV = {
+    madeireiro: { intr: 2, spr: 'logger', cond: () => cnt('jequitiba') + cnt('ipe') + cnt('inga') >= 3,
+      t: 'MADEIREIROS ILEGAIS! Clique neles para chamar a Polícia Ambiental.', win: 'A Polícia Ambiental, avisada pela Torre 3, apreendeu a motosserra.',
+      dmg: f => { const lost = cut('jequitiba', .5 * f) + cut('ipe', .4 * f) + cut('inga', .3 * f); return `Os madeireiros derrubaram ${lost} árvores grandes.`; }, dia: 'madeira' },
+    palmiteiro: { intr: 2, spr: 'palm', cond: () => cnt('jucara') >= 3,
+      t: 'PALMITEIROS! Vão cortar o palmito-juçara. Clique neles.', win: 'Os palmiteiros fugiram sem levar nada.',
+      dmg: f => `Os palmiteiros cortaram ${cut('jucara', .5 * f)} palmitos-juçara.`, dia: 'palmito' },
+    gado: { intr: 3, spr: 'cow', cond: () => !GS.up.cerca && cnt('guandu') + cnt('embauba') + cnt('aroeira') + cnt('inga') >= 4,
+      t: 'GADO SOLTO comendo as mudas! Clique nos bois para espantar.', win: 'O gado voltou para o pasto do vizinho.',
+      dmg: f => { const lost = cut('guandu', .4 * f) + cut('embauba', .2 * f) + cut('aroeira', .2 * f) + cut('inga', .1 * f); return `O gado comeu e pisoteou ${lost} mudas. A cerca resolve isso.`; }, dia: 'gado' },
+    erosao: { cond: () => true, run: () => { if (cover() < 40) { GS.solo = Math.max(0, GS.solo - 12); return ['Chuva forte na encosta: sem cobertura, a enxurrada levou parte do solo.', P.lo]; } return ['Chuva forte, mas as plantas seguraram o solo da encosta.', P.lg]; }, dia: 'erosao' },
+    enchente: { cond: () => cnt('guandu') + cnt('embauba') + cnt('aroeira') > 0, run: () => { const lost = cut('guandu', .4) + cut('embauba', .15) + cut('aroeira', .15); return [`Cheia do rio! Arrastou ${lost} mudas baixas. O ingá, de beira de rio, aguentou.`, P.lo]; }, dia: 'enchente' },
+    chuva: { cond: () => true, run: () => { GS.solo = Math.min(100, GS.solo + 4); return ['Chuva mansa: o solo agradece (+4).', P.lb]; } },
+    pesquisa: { cond: () => GS.stage >= 1, run: () => { const n = Math.max(60, rates().total * 40); addSeeds(n); return [`Pesquisadores da universidade contaram as espécies e deixaram ${fmt(n)} sementes do banco de sementes.`, P.lg]; }, dia: 'pesquisa' },
+    mutirao: { cond: () => true, run: () => { const n = Math.max(100, rates().total * 60); addSeeds(n); return [`Mutirão da escola da Vila: as crianças coletaram ${fmt(n)} sementes!`, P.lg]; } }
+  };
+  function cut(k, f) { const n = cnt(k), lost = Math.min(n, Math.ceil(n * f)); if (f > 0 && n) GS.pl[k] = n - lost; return f > 0 && n ? lost : 0; }
+  S.ev = null; S.evClock = 0; S.evNext = 70;
+  function startEvent() {
+    const list = AD().ev.filter(k => EV[k].cond());
+    if (!list.length) return;
+    const k = list[Math.floor(Math.random() * list.length)], E = EV[k];
+    if (E.intr) {
+      const who = [];
+      for (let i = 0; i < E.intr; i++) { const left = Math.random() < .5; who.push({ x: left ? 6 + i * 10 : 314 - i * 10, dx: left ? 6 : -6, alive: true }); }
+      S.ev = { k, t0: S.t, dur: 16, who }; note(E.t, P.r); sfx.alert();
+    } else { const [m, c] = E.run(); note(m, c); (c === P.lo ? sfx.bad : sfx.open)(); }
+    if (E.dia) diary(E.dia);
+  }
+  function tickEvent(dt) {
+    if (S.ev) {
+      const E = EV[S.ev.k];
+      S.ev.who.forEach(w => { if (w.alive) w.x = Math.max(6, Math.min(314, w.x + w.dx * dt)); });
+      const left = S.ev.who.filter(w => w.alive).length;
+      if (!left) { note(E.win, P.lg); sfx.good(); S.ev = null; }
+      else if (S.t - S.ev.t0 > S.ev.dur) { note(E.dmg(left / S.ev.who.length), P.r); sfx.bad(); S.ev = null; }
+      return;
+    }
+    S.evClock += dt;
+    if (S.evClock > S.evNext && GS.stage >= 1) { S.evClock = 0; S.evNext = 70 + Math.random() * 80; startEvent(); }
+  }
+  function introArea() {
+    if (GS.intro === GS.area) return;
+    GS.intro = GS.area; const A = AD();
+    modal(`${A.n.toUpperCase()}\n\n${A.d}\n\n${A.mods}`, [['PLANTAR', () => { S.modal = null; }]]);
+  }
+
+  // ---------------- simulação ----------------
+  function tick(dt) {
+    const R0 = rates();
+    addSeeds(R0.total * dt);
+    // solo: leguminosas e serrapilheira
+    let tot = 0; for (const k of PL_ORDER) tot += cnt(k);
+    const ds = (cnt('guandu') * PL.guandu.soil + cnt('inga') * PL.inga.soil + tot * .0015) * (GS.up.adubo ? 2 : 1) * AD().soil * (1 - GS.solo / 100);
+    GS.solo = Math.min(100, GS.solo + ds * dt);
+    // pioneiras morrem na sombra
+    const L = luz();
+    for (const k of ['guandu', 'embauba', 'aroeira']) {
+      const p = PL[k]; if (cnt(k) > 0 && L < p.luz[0] - 8) { GS['die_' + k] = (GS['die_' + k] || 0) + cnt(k) * .02 * dt; if (GS['die_' + k] >= 1) { const n = Math.floor(GS['die_' + k]); GS['die_' + k] -= n; GS.pl[k] = Math.max(0, cnt(k) - n); GS.solo = Math.min(100, GS.solo + n * .3); diary('sombra'); } }
+    }
+    // braquiária: aparece no sol, some na sombra
+    GS.braqT += dt;
+    if (L > 50 && GS.braqT > (9 - (L - 50) / 10) / AD().braq && GS.tufts.length < 14) { GS.braqT = 0; GS.tufts.push({ x: 10 + Math.floor(Math.random() * 290), s: 0 }); diary('braq'); }
+    if (L < 40 && GS.braqT > 6 && GS.tufts.length) { GS.braqT = 0; GS.tufts.pop(); }
+    GS.tufts.forEach(t => t.s = Math.min(1, t.s + dt / 20));
+    if (GS.up.mutirao) { GS.mutT += dt; if (GS.mutT > 8 && GS.tufts.length) { GS.mutT = 0; GS.tufts.shift(); } }
+    // fogo
+    GS.fireT += dt;
+    if (GS.tufts.length >= 8 && !GS.up.aceiro && GS.fireT > 30 && Math.random() < .006 * dt * 10 * AD().fire) {
+      GS.fireT = 0; S.fire = S.t;
+      for (const k of PL_ORDER) { const loss = ['guandu', 'embauba', 'aroeira', 'eucalipto'].includes(k) ? .4 : .2; GS.pl[k] = Math.round(cnt(k) * (1 - loss)); }
+      GS.tufts = []; GS.solo = Math.max(0, GS.solo - 8); note('FOGO! A braquiária seca queimou parte das mudas.', P.r); diary('fogo'); sfx.bad();
+    }
+    checkStage();
+    tickEvent(dt);
+  }
+  // progresso enquanto o jogo esteve fechado (metade da produção, até 8 h)
+  (function offline() {
+    const dt = Math.min(8 * 3600, (Date.now() - (GS.t || Date.now())) / 1000);
+    if (dt > 60) { const g = rates().total * dt * .5; if (g >= 1) { addSeeds(g); S.offline = { dt, g }; } }
+  })();
+
+  // ---------------- números ----------------
+  function fmt(n) {
+    if (n < 10 && n % 1) return n.toFixed(1).replace('.', ',');
+    if (n < 1000) return String(Math.floor(n));
+    const u = [[1e12, 'tri'], [1e9, 'bi'], [1e6, 'mi'], [1e3, 'mil']];
+    for (const [v, s] of u) if (n >= v) return (n / v).toFixed(n / v < 10 ? 2 : n / v < 100 ? 1 : 0).replace('.', ',') + ' ' + s;
+  }
+
+  // ---------------- desenho da cena ----------------
+  function gy(x) { const L = AD().look; return L === 'encosta' ? GROUND - 14 + Math.round(x * .044) : GROUND; }
+  const pos = (k, i) => { const h = hsh(k.length * 13 + i, k.charCodeAt(0)); return 8 + Math.floor(h * 304); };
+  const SPR2 = {
+    guandu(x, y) { R(g, x - 3, y - 6, 7, 6, '#4a8a2a'); R(g, x - 2, y - 7, 5, 2, '#5aa03a'); R(g, x - 1, y - 5, 1, 1, P.y); R(g, x + 2, y - 3, 1, 1, P.y); },
+    embauba(x, y, t) { R(g, x, y - 30, 1, 30, '#c8c8b8'); const sw = Math.round(Math.sin(t + x) * .6); for (let i = 0; i < 4; i++) R(g, x - 7 + i * 2 + sw, y - 31 - i, 15 - i * 4, 2, i % 2 ? '#a8c8a0' : '#88a880'); R(g, x - 2, y - 26, 1, 4, '#a8b890'); },
+    aroeira(x, y) { R(g, x, y - 14, 2, 14, '#5a4030'); blob(g, x + 1, y - 17, 6, 5, '#2a6a2a'); [[-3, -18], [2, -15], [4, -19], [-1, -14]].forEach(([a, b]) => R(g, x + a, y + b, 1, 1, P.r)); },
+    eucalipto(x, y) { R(g, x, y - 44, 2, 44, '#c8c0b0'); R(g, x - 3, y - 50, 8, 18, '#7a9a8a'); dith(g, x - 3, y - 50, 8, 18, '#5a7a6a'); },
+    inga(x, y) { R(g, x, y - 22, 2, 22, '#5a4030'); R(g, x - 3, y - 18, 3, 1, '#5a4030'); blob(g, x + 1, y - 24, 11, 4, '#2a7a2a'); dith(g, x - 9, y - 26, 20, 3, '#3a9a3a'); R(g, x + 5, y - 21, 1, 4, '#9a8a3a'); },
+    ipe(x, y) { R(g, x, y - 36, 2, 36, '#4a3a2a'); blob(g, x + 1, y - 38, 9, 6, '#e8b818'); dith(g, x - 7, y - 42, 16, 6, '#f8d848'); },
+    jequitiba(x, y) { R(g, x - 1, y - 58, 4, 58, '#5a3a2a'); R(g, x - 4, y - 4, 10, 4, '#5a3a2a'); blob(g, x + 1, y - 60, 16, 6, '#1a5a2a'); blob(g, x - 6, y - 56, 8, 4, '#1a5a2a'); blob(g, x + 9, y - 57, 8, 4, '#2a6a2a'); dith(g, x - 12, y - 64, 26, 5, '#2a7a3a'); },
+    jucara(x, y) { R(g, x, y - 30, 1, 30, '#7a7a6a'); for (let i = -1; i <= 1; i += 2) for (let k = 0; k < 9; k++) R(g, x + i * k, y - 31 + Math.round(k * k * .09), 1, 1, '#2a7a3a'); for (let k = 0; k < 7; k++) R(g, x, y - 37 + k, 1, 1, '#3a8a3a'); R(g, x + 1, y - 27, 2, 3, '#5a2a6a'); },
+  };
+  function drawAnimals(F, night, t) {
+    const show = (a, n) => Math.min(n, a === 'anta' ? 2 : 6);
+    for (let i = 0; i < show('sabia', F.sabia.n) && !night; i++) { const x = (pos('sabia', i) + t * 18 * (i % 2 ? 1 : -1) + 320) % 320, y = 40 + (i * 13) % 50 + Math.sin(t * 6 + i) * 2; R(g, x, y, 3, 2, '#7a5a3a'); R(g, x + 1, y + 1, 1, 1, P.lo); }
+    for (let i = 0; i < show('morcego', F.morcego.n) && night; i++) { const x = (pos('morc', i) + t * 30) % 330 - 5, y = 30 + (i * 17) % 50 + Math.sin(t * 9 + i) * 5, w = Math.floor(t * 10 + i) % 2; R(g, x, y, 1, 2, P.k); R(g, x - 2, y - w, 2, 1, P.k); R(g, x + 1, y - w, 2, 1, P.k); }
+    for (let i = 0; i < show('tucano', F.tucano.n) && !night; i++) { const x = (pos('tuc', i) - t * 22 + 640) % 340 - 10, y = 30 + i * 9; R(g, x, y, 5, 3, P.k); R(g, x - 4, y, 4, 2, P.or); R(g, x + 1, y, 1, 1, P.w); }
+    for (let i = 0; i < show('bugio', F.bugio.n) && !night; i++) { const x = pos('inga', i) - 2, y = GROUND - 27; R(g, x, y, 4, 3, '#7a2a10'); R(g, x + 3, y + 2, 1, 4, '#7a2a10'); }
+    for (let i = 0; i < show('jacutinga', F.jacutinga.n) && !night; i++) { const x = pos('jucara', i) + 2, y = GROUND - 34; R(g, x, y, 4, 3, P.k); R(g, x + 1, y + 1, 2, 1, P.w); R(g, x + 3, y - 1, 1, 1, P.r); }
+    for (let i = 0; i < show('anta', F.anta.n); i++) { const x = (pos('anta', i) + t * 6 * (i ? -1 : 1) + 340) % 340 - 10, y = gy(Math.max(0, Math.min(319, x))) - 2; blob(g, x, y - 5, 8, 4, '#3a3434'); R(g, x + 7, y - 8, 4, 4, '#3a3434'); R(g, x + 11, y - 6, 2, 2, '#3a3434'); [-6, -3, 3, 6].forEach(o => R(g, x + o, y - 2, 2, 3, '#3a3434')); }
+  }
+  function scene() {
+    const t = S.t, day = (t / 120) % 1, night = day > .62 && day < .92, dusk = (day > .55 && day <= .62) || (day >= .92);
+    const sky = night ? ['#0c1430', '#142048'] : dusk ? ['#6844fc', '#e4805c'] : ['#3cbcfc', '#a4e4fc'];
+    R(g, 0, 12, VW, 60, sky[0]); R(g, 0, 50, VW, 30, sky[1]); dith(g, 0, 46, VW, 6, sky[1]);
+    if (night) for (let i = 0; i < 30; i++) R(g, (i * 67) % VW, 14 + (i * 23) % 40, 1, 1, P.l); else { blob(g, 40 + day * 400, 30, 5, 5, P.y); }
+    ridge(g, 0, 12, [[0, 66], [60, 50], [120, 62], [190, 44], [250, 60], [320, 52]], night ? '#1c2c3c' : '#4a7a8a', 120, VW);
+    ridge(g, 0, 12, [[0, 86], [80, 78], [170, 88], [260, 76], [320, 84]], night ? '#14281c' : '#2a6a3a', 120, VW);
+    // chão: escurece com a matéria orgânica
+    const sc = GS.solo, soil = sc < 25 ? '#8a6a4a' : sc < 50 ? '#6a5038' : sc < 75 ? '#4a3a28' : '#3a2c1c';
+    const look = AD().look;
+    if (look === 'vila') [[40, 96], [70, 100], [210, 94], [250, 98], [284, 96]].forEach(([x, y]) => { R(g, x, y, 18, 14, night ? '#2a2a3a' : '#d8c8a8'); R(g, x - 2, y - 4, 22, 4, '#a84828'); R(g, x + 6, y + 5, 4, 4, night ? '#f8d070' : '#5a7a9a'); });
+    for (let x = 0; x < VW; x++) { const y = gy(x); R(g, x, y, 1, 140 - y, soil); }
+    dith(g, 0, GROUND - 14, VW, 28, GS.stage === 0 ? '#2a2420' : look === 'pasto' ? '#8a8a3a' : '#5a4a30');
+    for (let x = 0; x < VW; x++) { const y = gy(x); if (y > GROUND - 14) R(g, x, GROUND - 14, 1, y - GROUND + 14, look === 'encosta' ? (night ? '#14281c' : '#2a6a3a') : 'transparent'); }
+    if (look === 'encosta') [[30, 0], [140, 0], [260, 0]].forEach(([x]) => { blob(g, x, gy(x) + 2, 6, 3, '#6a6a6a'); R(g, x - 4, gy(x) - 1, 6, 1, '#8a8a8a'); });
+    if (look === 'pasto' || look === 'vila') for (let x = 6; x < VW; x += 26) { R(g, x, gy(x) - 10, 1, 10, '#6a4a2a'); if (x + 26 < VW) { R(g, x, gy(x) - 8, 26, 1, '#8a8a8a'); R(g, x, gy(x) - 4, 26, 1, '#8a8a8a'); } }
+    if (look === 'pasto') { R(g, 230, GROUND - 5, 22, 5, '#5a5a5a'); R(g, 231, GROUND - 4, 20, 2, '#3a6a9a'); }
+    if (GS.stage < 2) for (let i = 0; i < 9; i++) { const x = 20 + i * 35, y = gy(x); R(g, x, y - 6, 3, 6, '#1a1410'); R(g, x - 1, y - 7, 5, 1, '#2a2420'); }
+    // poleiros
+    for (let i = 0; i < Math.min(6, GS.fa.poleiro || 0); i++) { const x = 30 + i * 47, y = gy(x); R(g, x, y - 20, 1, 20, '#7a5a3a'); R(g, x - 4, y - 20, 9, 1, '#7a5a3a'); }
+    // plantas, das mais altas para as mais baixas
+    const order = PL_ORDER.slice().sort((a, b) => PL[b].h - PL[a].h);
+    for (const k of order) { const n = Math.min(cnt(k), k === 'guandu' ? 18 : 12); for (let i = 0; i < n; i++) { const x = pos(k, i); SPR2[k](x, gy(x) + (i % 3), t); } }
+    // braquiária
+    GS.tufts.forEach((tf, i) => { const x = tf.x, h = 3 + Math.round(tf.s * 5), G0 = gy(x); for (let k = -3; k <= 3; k++) R(g, x + k * 2, G0 - h + Math.abs(k), 1, h - Math.abs(k), k % 2 ? '#b8c858' : '#98b048'); });
+    if (look === 'rio') { R(g, 0, 132, VW, 8, night ? '#142048' : '#3a7ab8'); for (let i = 0; i < 12; i++) R(g, (i * 53 + Math.floor(t * 12)) % VW, 134 + (i % 3) * 2, 8, 1, night ? '#2a3a6a' : '#8ac8f0'); }
+    drawAnimals(rates().F, night, t);
+    // invasores
+    if (S.ev) {
+      const E = EV[S.ev.k], left = 1 - (S.t - S.ev.t0) / S.ev.dur;
+      S.ev.who.forEach((w, i) => { if (!w.alive) return; const x = Math.round(w.x), y = gy(x), bob = Math.floor(t * 6 + i) % 2;
+        if (E.spr === 'cow') { R(g, x - 7, y - 9 + bob, 14, 6, P.w); R(g, x - 4, y - 8 + bob, 4, 3, P.k); R(g, x + 2, y - 7 + bob, 3, 3, P.k); R(g, x + (w.dx > 0 ? 6 : -10), y - 11 + bob, 4, 4, P.w); [-6, -2, 3, 6].forEach(o => R(g, x + o, y - 3, 1, 3, P.k)); }
+        else { R(g, x - 1, y - 15, 3, 3, '#e8b898'); R(g, x - 2, y - 16, 5, 2, E.spr === 'logger' ? P.or : '#7a5a2a'); R(g, x - 2, y - 12, 5, 6, '#3a3a4a'); R(g, x - 2, y - 6, 2, 6, '#2a2a2a'); R(g, x + 1, y - 6, 2, 6, '#2a2a2a');
+          if (E.spr === 'logger') { R(g, x + (w.dx > 0 ? 3 : -7), y - 10, 5, 3, P.or); R(g, x + (w.dx > 0 ? 8 : -9), y - 9, 3, 1, P.l); } else { R(g, x + (w.dx > 0 ? 3 : -5), y - 11, 1, 6, P.l); R(g, x - 4, y - 11, 2, 5, '#8a7a4a'); } }
+        if (Math.floor(t * 3) % 2) R(g, x - 1, y - 22, 3, 3, P.r);
+      });
+      R(g, 0, 12, VW, 3, P.k); R(g, 0, 12, Math.round(VW * Math.max(0, left)), 3, P.r);
+    }
+    if (night) { g.globalAlpha = .25; R(g, 0, 12, VW, 128, '#000020'); g.globalAlpha = 1; }
+    if (S.fire && S.t - S.fire < 2.5) { g.globalAlpha = .4 * (1 - (S.t - S.fire) / 2.5); R(g, 0, 12, VW, 128, P.or); g.globalAlpha = 1; }
+    // partículas "+n"
+    S.parts = S.parts.filter(p => S.t - p.t < 1);
+    S.parts.forEach(p => text(g, p.s, p.x, p.y - (S.t - p.t) * 24, p.c || P.w));
+  }
+
+  // ---------------- interface ----------------
+  function clickScene() {
+    if (S.ev) { const w = S.ev.who.find(w => w.alive && Math.abs(M.x - w.x) < 9 && M.y > gy(w.x) - 24 && M.y < gy(w.x) + 3);
+      if (w) { w.alive = false; const n = Math.ceil(clickPow() * 5); addSeeds(n); S.parts.push({ s: '+' + fmt(n), x: M.x, y: M.y - 10, t: S.t, c: P.y }); sfx.send(); return; } }
+    // braquiária
+    const tf = GS.tufts.findIndex(t => Math.abs(M.x - t.x) < 8 && M.y > gy(t.x) - 12 && M.y < gy(t.x) + 4);
+    if (tf >= 0) { GS.tufts.splice(tf, 1); const n = Math.ceil(clickPow() * 3); addSeeds(n); S.parts.push({ s: '+' + fmt(n), x: M.x, y: M.y, t: S.t, c: P.lime }); sfx.click(); return; }
+    const n = clickPow(); addSeeds(n); GS.clicks++; S.parts.push({ s: '+' + fmt(n), x: M.x - 6, y: M.y - 6, t: S.t }); beep(900 + Math.random() * 300, .03, 'triangle', .03);
+  }
+  function topBar() {
+    const r = rates();
+    R(g, 0, 0, VW, 12, P.cons); R(g, 0, 11, VW, 1, P.k);
+    text(g, fmt(GS.seeds) + ' sementes', 3, 0, P.py);
+    text(g, '+' + fmt(r.total) + '/s', 128, 0, P.lg);
+    text(g, STAGES[GS.stage], 196, 0, P.y);
+    btn(284, 1, 16, 10, '?', () => openGloss('h'), { bg: P.lb });
+    btn(302, 1, 16, 10, mute ? '×' : '♪', () => { mute = !mute; MUS.setMute(mute); try { localStorage.setItem('regen-mudo', mute ? '1' : '0'); } catch (e) {} });
+  }
+  function strip() {
+    R(g, 0, 140, VW, 12, '#0a120a');
+    const L = luz(), H = shannon();
+    text(g, `LUZ ${Math.round(L)}%`, 3, 140, L > 50 ? P.y : P.lg);
+    text(g, `SOLO ${Math.round(GS.solo)}`, 64, 140, '#c8a070');
+    text(g, `H ${H.toFixed(2).replace('.', ',')}`, 122, 140, P.lb);
+    text(g, `CAPIM ${GS.tufts.length}`, 170, 140, GS.tufts.length >= 8 ? P.r : '#b8c858');
+    text(g, 'ÁREA ' + (GS.area + 1), 280, 140, P.g);
+    [[0, 60, 'luz'], [62, 56, 'solo'], [120, 46, 'h'], [168, 60, 'capim'], [276, 44, 'res']].forEach(([x, w, k]) => hit(x, 140, w, 12, () => openGloss(k)));
+    text(g, '?', 262, 140, Math.floor(S.t) % 4 === 0 ? P.lb : '#3a5a6a');
+  }
+  function rowPlant(k, y) {
+    const p = PL[k], un = unlocked(p.st), n = S.mult, c = costOf(pc0(k), p.cm, cnt(k), n), sv = survival(k), can = un && GS.seeds >= c;
+    R(g, 3, y, 300, 31, '#0e1a0e');
+    if (!un) { text(g, '??? · aparece na fase ' + STAGES[p.st], 6, y + 10, '#4a5a4a'); return 33; }
+    text(g, `${p.n} ×${cnt(k)}`, 6, y, P.w); text(g, p.grp, 6, y + 10, p.exotic ? P.lo : P.g);
+    text(g, `luz ${p.luz[0]}-${p.luz[1]}%`, 116, y + 10, P.g);
+    text(g, `pega ${Math.round(sv * 100)}%`, 172, y, sv === 1 ? P.lg : P.r);
+    const eat = Object.keys(AN).filter(a => AN[a].diet.includes(k));
+    if (foodOf(k)) { fruit(6, y + 23, k); text(g, ('alimenta ' + eat.map(a => AN[a].n.split(' ')[0].toLowerCase()).join(', ')).slice(0, 35), 14, y + 20, '#e8a0a0'); }
+    else if (p.wind) text(g, 'semente com asa: o vento espalha', 6, y + 20, P.lb);
+    else if (p.soil) text(g, 'fixa nitrogênio: aduba o solo', 6, y + 20, '#c8a070');
+    else if (p.exotic) text(g, 'não alimenta a fauna nativa', 6, y + 20, P.lo);
+    btn(232, y + 7, 70, 17, fmt(c), () => buyPlant(k, n), can ? { bg: P.y } : { dis: 1 });
+    if (k === 'eucalipto' && cnt(k)) btn(180, y + 20, 48, 10, 'CORTAR', cutEuc);
+    return 33;
+  }
+  // ícone de fruto (cor da fruta de cada planta)
+  const FRUIT = { embauba: '#c8d060', aroeira: '#e03020', inga: '#b8a040', jucara: '#6a2a8a' };
+  function fruit(x, y, k) { const c = FRUIT[k] || P.r; R(g, x, y - 1, 3, 3, c); R(g, x + 1, y - 3, 1, 2, '#3a8a3a'); R(g, x, y - 1, 1, 1, P.w); }
+  function rowFa(k, y) {
+    const f = FA[k], un = unlocked(f.st), n = S.mult, c = costOf(f.c0, f.cm, GS.fa[k] || 0, n), can = un && GS.seeds >= c, F = fauna();
+    R(g, 3, y, 300, 31, '#0e1a0e');
+    if (!un) { text(g, '??? · aparece na fase ' + STAGES[f.st], 6, y + 10, '#4a5a4a'); return 33; }
+    text(g, `${f.n} ×${GS.fa[k] || 0}`, 6, y, P.w);
+    const info = Object.keys(f.give).map(a => `${AN[a].n.split(' ')[0].toLowerCase()} ${F[a].n}/${F[a].cap}`).join(' ');
+    const hungry = Object.keys(f.give).filter(a => F[a].hungry);
+    text(g, (info + (hungry.length ? ' · FALTA COMIDA' : '')).slice(0, 37), 6, y + 10, hungry.length ? P.lo : P.g);
+    const diet = [...new Set(Object.keys(f.give).flatMap(a => AN[a].diet))];
+    let x = 6; text(g, 'come:', x, y + 20, P.g); x += 32;
+    diet.forEach(k2 => { fruit(x, y + 23, k2); text(g, PL[k2].short, x + 5, y + 20, cnt(k2) ? '#e8a0a0' : '#6a5a5a'); x += tw(PL[k2].short) + 10; });
+    btn(232, y + 7, 70, 17, fmt(c), () => buyFa(k, n), can ? { bg: P.y } : { dis: 1 });
+    return 33;
+  }
+  function rowUp(k, y) {
+    const u = UP[k], have = GS.up[k], lock = u.req && !GS.up[u.req], can = !have && !lock && GS.seeds >= u.c;
+    R(g, 3, y, 300, 21, '#0e1a0e');
+    text(g, u.n, 6, y, have ? P.lg : P.w); text(g, u.d.slice(0, 37), 6, y + 10, P.g);
+    btn(232, y + 2, 70, 17, have ? 'FEITO ✓' : fmt(u.c), () => buyUp(k), can ? { bg: P.y } : { dis: 1 });
+    return 23;
+  }
+  function panel() {
+    R(g, 0, 152, VW, 88, P.cons);
+    const tabs = [['pl', 'PLANTAR'], ['fa', 'FAUNA'], ['up', 'MELHORIA'], ['me', 'META'], ['di', 'DIÁRIO']];
+    tabs.forEach(([k, l], i) => btn(2 + i * 56, 153, 55, 11, l, () => { S.tab = k; S.sc = {}; if (k === 'di') S.newDiary = null; }, S.tab === k ? { bg: P.y } : (k === 'di' && S.newDiary && Math.floor(S.t * 2) % 2 ? { bg: P.pk } : (k === 'me' && GS.stage >= 4 && Math.floor(S.t * 2) % 2 ? { bg: P.lg } : {}))));
+    if (S.tab === 'pl' || S.tab === 'fa') btn(284, 153, 34, 11, '×' + S.mult, () => { S.mult = S.mult === 1 ? 10 : 1; });
+    if (S.tab === 'pl') scrollArea('pl', 2, 166, 316, 72, y0 => { let y = y0; PL_ORDER.forEach(k => y += rowPlant(k, y)); return y - y0; });
+    if (S.tab === 'fa') scrollArea('fa', 2, 166, 316, 72, y0 => { let y = y0; FA_ORDER.forEach(k => y += rowFa(k, y)); y += lines('Animais trazem sementes de fora e as espalham. Cada estrutura abriga alguns, mas só ficam os que têm comida: abrigo a mais, sem as plantas que eles comem, fica vazio e não rende nada.', 6, y + 2, 49, P.g); return y - y0 + 4; });
+    if (S.tab === 'up') scrollArea('up', 2, 166, 316, 72, y0 => { let y = y0; UP_ORDER.forEach(k => y += rowUp(k, y)); return y - y0; });
+    if (S.tab === 'me') scrollArea('me', 2, 166, 316, 72, y0 => {
+      let y = y0;
+      if (GS.stage >= 4) {
+        y += lines(`Área restaurada! ${AD().n} virou mata. Comece outra área: tudo recomeça, mas a produção fica ×${(1 + .5 * (GS.restored + 1)).toFixed(1)} para sempre.`, 6, y, 50, P.lg) + 4;
+        btn(6, y, 200, 15, 'RESTAURAR NOVA ÁREA', restore, { bg: P.y }); return y - y0 + 20;
+      }
+      text(g, `FASE ${GS.stage + 1}: ${STAGES[GS.stage]} → ${STAGES[GS.stage + 1]}`, 6, y, P.y); y += LH + 2;
+      for (const [d, ok] of reqs()[GS.stage]) { text(g, (ok ? '✓ ' : '· ') + d, 10, y, ok ? P.lg : P.l); y += LH; }
+      y += 4; text(g, 'ÁREA ' + (GS.area + 1) + ': ' + AD().n.toUpperCase(), 6, y, P.lb); y += LH;
+      y += lines(AD().mods, 6, y, 50, P.l) + 4;
+      y += lines('Restauradas: ' + GS.restored + '. Cliques: ' + GS.clicks + '.', 6, y, 50, P.g) + 4;
+      btn(6, y, 150, 13, 'GLOSSÁRIO (?)', () => openGloss('suc')); y += 16;
+      return y - y0 + 4;
+    });
+    if (S.tab === 'di') scrollArea('di', 2, 166, 316, 72, y0 => {
+      let y = y0;
+      Object.keys(DIARY).filter(k => GS.diary[k]).reverse().forEach(k => { y += lines(DIARY[k], 6, y, 49, k === (S.newDiary || {}).k ? P.py : P.l) + 5; });
+      return y - y0;
+    });
+  }
+  // ---------------- glossário ----------------
+  const n2 = x => x.toFixed(2).replace('.', ',');
+  const GLOSS = [
+    ['H (diversidade)', 'h', () => {
+      const xs = PL_ORDER.filter(k => !PL[k].exotic && cnt(k) > 0);
+      return `H é o índice de diversidade de Shannon. Ele cresce com o número de espécies e com o equilíbrio entre elas.\n\nConta: H = -soma de (p × ln p), em que p é a fração de cada espécie. Com 1 espécie, H = 0. Com 4 espécies em quantidades iguais, H = ln 4 ~ 1,39. Se uma espécie domina, H cai, mesmo com muitas espécies.\n\nNo jogo, H multiplica a produção (×1 + 0,35 × H), entra na meta da mata madura e cai quando há eucalipto (exótica não conta).\n\nAgora: H = ${n2(shannon())}, com ${xs.length} espécies nativas.`; }],
+    ['LUZ', 'luz', () => `Porcentagem de luz que chega ao chão. Começa em 100% no solo queimado e cai à medida que as copas se fecham (LUZ = 100% - cobertura).\n\nCada muda só pega na sua faixa de luz: pioneiras precisam de sol, espécies de mata madura precisam de sombra.\n\nAgora: LUZ ${Math.round(luz())}%.`],
+    ['Cobertura', 'cob', () => `Quanto do céu as copas tapam, vista de cima. Árvores grandes cobrem mais: um jequitibá cobre como 3 embaúbas. A Mata secundária pede 55% de cobertura.\n\nAgora: ${Math.round(cover())}%.`],
+    ['SOLO', 'solo', () => `Matéria orgânica do solo, de 0 a 100. Sobe com as folhas que caem (serrapilheira), com as leguminosas que fixam nitrogênio (guandu, ingá) e quando as pioneiras morrem e viram adubo. O chão da cena escurece conforme o solo melhora.\n\nEspécies mais exigentes só pegam com solo bom.\n\nAgora: ${Math.round(GS.solo)}.`],
+    ['CAPIM', 'capim', () => `Touceiras de braquiária, um capim africano de pasto. No sol, ela abafa as mudas (cada touceira tira 4,5% da produção) e seca no inverno, virando combustível: com 8 ou mais, o fogo pode voltar. Some sozinha quando a mata faz sombra. Clique nela para arrancar.\n\nAgora: ${GS.tufts.length} touceiras.`],
+    ['Pega', 'pega', () => `Chance de a muda sobreviver ao plantio. É 100% quando a luz e o solo estão na faixa da espécie. Fora dela, cai para 20% (45% com viveiro, 70% com viveiro de sombrite): mudas plantadas no lugar errado morrem e o dinheiro é perdido.`],
+    ['Sementes/s', 'sps', () => `A moeda do jogo. Vêm dos animais dispersores (a maior parte), das sementes que o vento leva (ipê, jequitibá) e do guandu. São multiplicadas pela diversidade (H), pelo capim e pelas áreas já restauradas. O clique rende 3% da produção por segundo.\n\nAgora: ${fmt(rates().total)} por segundo.`],
+    ['Sucessão', 'suc', () => 'A troca gradual de espécies num lugar perturbado (queimado, desmatado) até a mata se refazer: Solo queimado → Campo sujo → Capoeira → Mata secundária → Mata madura. Cada grupo de espécies muda as condições (luz, solo, umidade) e prepara o terreno para o grupo seguinte.'],
+    ['Pioneira', 'pio', () => 'Planta de crescimento rápido e vida curta, que aguenta sol forte e solo pobre: embaúba, aroeira. É a primeira a chegar e faz a primeira sombra. Morre quando a mata se fecha.'],
+    ['Secundária', 'sec', () => 'Espécies que chegam depois das pioneiras e precisam de meia-sombra e de solo melhor: ingá (secundária inicial), ipê (secundária tardia). Formam o corpo da mata secundária.'],
+    ['Clímax', 'cli', () => 'Espécies da mata madura, que só se estabelecem na sombra: jequitibá-rosa (árvore emergente, acima do dossel) e palmito-juçara (sub-bosque). Crescem devagar e vivem muito.'],
+    ['Fixação de N', 'fix', () => 'Leguminosas como o feijão-guandu e o ingá têm nódulos nas raízes com bactérias (rizóbios) que transformam o nitrogênio do ar em adubo. Por isso o guandu é usado como "adubo verde" na restauração.'],
+    ['Dispersão', 'disp', () => 'Como as sementes chegam longe da planta-mãe. Zoocoria: por animais que comem os frutos (sabiás, morcegos, tucanos, antas). Anemocoria: pelo vento, com sementes aladas (ipê, jequitibá). Na Mata Atlântica, a maioria das árvores depende de animais.'],
+    ['Nucleação', 'nuc', () => 'Técnica de restauração que cria pequenos "núcleos" que atraem vida, em vez de plantar tudo: poleiros artificiais para as aves, abrigos para morcegos, montes de galhos. As sementes que os animais trazem começam a mata em volta deles.'],
+    ['Capacidade de suporte', 'cap', () => 'O número máximo de indivíduos que um ambiente sustenta. No jogo, cada estrutura abre vagas, mas só fica o animal que tem comida: com abrigo e sem as plantas certas, a vaga fica vazia ("FALTA COMIDA").'],
+    ['Exótica/invasora', 'exo', () => 'Exótica: veio de outra região (eucalipto da Austrália, braquiária da África). Invasora: exótica que se espalha sozinha e prejudica as nativas, como a braquiária. Exótica não alimenta a fauna nativa e não conta para a diversidade.'],
+    ['Aceiro', 'ace', () => 'Faixa de terra limpa, sem capim, em volta de uma área. O fogo não tem o que queimar e para ali.'],
+    ['Corredor', 'cor', () => 'Faixa de vegetação que liga fragmentos de mata. Animais grandes, como antas e bugios, não atravessam campo aberto: o corredor é o caminho por onde chegam e trocam genes com outras populações.'],
+    ['Mata ciliar', 'cil', () => 'A mata da beira dos rios. Segura o barranco, filtra a água e sombreia o rio. As espécies de lá, como o ingá, aguentam as cheias.'],
+    ['Erosão', 'ero', () => 'A chuva arrastando a camada fértil do solo. Acontece quando o chão está descoberto, principalmente nas encostas. Plantas e folhas no chão seguram a terra.'],
+    ['Área restaurada', 'res', () => `Quando uma área vira mata madura, você passa para a próxima. Tudo recomeça, mas a produção fica maior para sempre (+50% por área restaurada) e o diário é mantido.\n\nAgora: ${GS.restored} área(s) restaurada(s), produção ×${n2(prestigeMult())}.`],
+    ['Jogo fechado', 'off', () => 'Com a página fechada, os animais continuam trabalhando pela metade do ritmo, por até 8 horas. Ao voltar, você recebe as sementes acumuladas.']
+  ];
+  function openGloss(key) { S.over = 'glos'; S.gsel = Math.max(0, GLOSS.findIndex(x => x[1] === key)); S.sc = {}; }
+  function drawGloss() {
+    R(g, 0, 12, VW, 228, '#e8e0c8'); R(g, 0, 12, VW, 12, '#2a5a2a'); text(g, 'GLOSSÁRIO', 4, 12, P.py);
+    btn(290, 13, 28, 10, 'X', () => { S.over = null; S.sc = {}; });
+    scrollArea('glist', 2, 26, 110, 212, y0 => { let y = y0; GLOSS.forEach(([n], i) => { btn(2, y, 102, 14, n.length > 16 ? n.slice(0, 15) + '.' : n, () => { S.gsel = i; S.sc.gtxt = 0; }, S.gsel === i ? { bg: P.y, left: 1 } : { left: 1 }); y += 15; }); return y - y0; });
+    const [n, , f] = GLOSS[S.gsel || 0];
+    scrollArea('gtxt', 116, 26, 202, 212, y0 => {
+      let y = y0; text(g, n, 118, y, P.dg); y += LH + 3;
+      f().split('\n').forEach(par => { y += par ? lines(par, 118, y, 31, P.k) : 6; });
+      return y - y0 + 4;
+    });
+  }
+  function drawGame() {
+    if (!S.modal && GS.intro !== GS.area) introArea();
+    R(g, 0, 0, VW, VH, P.cons);
+    hit(0, 12, VW, 128, clickScene);
+    scene(); topBar(); strip(); panel();
+    if (S.over === 'glos') { HITS = []; AREAS = []; drawGloss(); return; }
+    if (GS.clicks < 6 && GS.seeds < 20 && Math.floor(S.t * 2) % 2) { R(g, 40, 96, 240, 12, 'rgba(0,0,0,.6)'); textC(g, 'CLIQUE NA PAISAGEM PARA COLHER SEMENTES', 160, 96, P.w); }
+    S.msgs.filter(m => S.t - m.at < 6).slice(0, 2).forEach((m, i) => { const ls = wrap(m.t, 52).slice(0, 2); R(g, 0, 14 + i * 22, VW, ls.length * 10 + 1, 'rgba(0,0,0,.6)'); ls.forEach((l, j) => text(g, l, 3, 13 + i * 22 + j * 10, m.c)); });
+  }
+  function drawTitle() {
+    R(g, 0, 0, VW, VH, '#3cbcfc'); R(g, 0, 90, VW, 60, '#a4e4fc');
+    ridge(g, 0, 0, [[0, 150], [80, 120], [160, 140], [240, 112], [320, 136]], '#4a7a8a', 240, VW);
+    ridge(g, 0, 0, [[0, 176], [100, 164], [200, 178], [320, 160]], '#2a6a3a', 240, VW);
+    R(g, 0, 196, VW, 44, '#4a3a28');
+    [[30, 'embauba'], [70, 'ipe'], [110, 'jequitiba'], [150, 'inga'], [190, 'jucara'], [230, 'aroeira'], [262, 'ipe'], [296, 'embauba']].forEach(([x, k]) => SPR2[k](x, 197, S.t));
+    textC(g, 'REGEN', 160, 26, P.dg, 5);
+    textC(g, 'DO CINZA À MATA', 160, 86, P.k);
+    textC(g, 'VALE DO SERENO', 160, 100, '#1a3a6a');
+    if (Math.floor(S.t * 2) % 2) textC(g, 'CLIQUE PARA PLANTAR', 160, 220, P.w);
+  }
+
+  // ---------------- laço ----------------
+  let last = performance.now(), saveT = 0;
+  function frame(now) {
+    const dt = Math.min(.25, (now - last) / 1000); last = now; S.t += dt;
+    HITS = []; AREAS = [];
+    try {
+      if (S.scene === 'title') drawTitle();
+      else {
+        if (!S.modal) { tick(dt); saveT += dt; if (saveT > 5) { saveT = 0; save(); } }
+        drawGame();
+      }
+      if (S.modal) {
+        HITS = []; DRAWING_MODAL = true;
+        for (let y = 0; y < VH; y++) for (let x = (y % 2); x < VW; x += 2) if ((x + y) % 4 === 0) R(g, x, y, 1, 1, P.k);
+        const ls = wrap(S.modal.text, 40), h = ls.length * LH + 34, y0 = Math.round(120 - h / 2);
+        R(g, 34, y0, 252, h, P.k); R(g, 35, y0 + 1, 250, h - 2, '#e8f0e0'); R(g, 35, y0 + 1, 250, 3, P.dg);
+        ls.forEach((l, i) => text(g, l, 40, y0 + 7 + i * LH, P.k));
+        const bw = 80, n = S.modal.btns.length, bx = 160 - (n * bw + (n - 1) * 8) / 2;
+        S.modal.btns.forEach(([l, fn], i) => btn(bx + i * (bw + 8), y0 + h - 20, bw, 14, l, fn, i === 0 ? { bg: P.y } : {}));
+        DRAWING_MODAL = false;
+      }
+    } catch (err) { console.error(err); R(g, 0, 0, VW, 12, P.r); text(g, 'ERRO: ' + String(err.message).slice(0, 48), 2, 0, P.w); }
+    if (M.x >= 0 && M.y >= 0 && M.x < VW && M.y < VH && matchMedia('(pointer:fine)').matches) {
+      const cx = Math.round(M.x), cy = Math.round(M.y);
+      ['k.........', 'kk........', 'kwk.......', 'kwwk......', 'kwwwk.....', 'kwwwwk....', 'kwwwwwk...', 'kwwwkkkk..', 'kwkwk.....', 'kk.kwk....', 'k...kk....'].forEach((row, j) => { for (let i = 0; i < 10; i++) if (row[i] !== '.') R(g, cx + i, cy + j, 1, 1, row[i] === 'k' ? P.k : P.w); });
+    }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+  window.addEventListener('beforeunload', save);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) save(); });
+  function fit() {
+    const W = window.innerWidth, H = window.innerHeight;
+    document.getElementById('mon').style.width = Math.max(280, Math.floor(Math.min(W - 12, (H - 60) / 0.775, 1100))) + 'px';
+  }
+  window.addEventListener('resize', fit); fit();
+  window.__R = { exportCycle: () => MUS.exportCycle(), get G() { return GS; }, set G(v) { GS = v; }, get S() { return S; }, tick, rates, buyPlant, buyFa, buyUp, cutEuc, restore, reqs, cover, luz, shannon, fauna, clickPow, survival, fresh, PL, FA, UP, PL_ORDER, FA_ORDER, UP_ORDER, costOf, click, clk() { M.x = 100; M.y = 60; clickScene(); } };
+
+
+})();
+</script>
+</body>
+</html>
