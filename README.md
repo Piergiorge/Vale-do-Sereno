@@ -20,6 +20,8 @@ Todos se passam no mesmo lugar: o **Vale do Sereno**, uma cidade fictícia funda
 | 🦠 **Operon** | Simulação em tempo real | Regulação gênica em bactérias: óperons lac e trp, repressor, indutor, CAP-AMPc, diauxia, atenuação e diagnóstico de mutantes (IPTG, merodiploides F′) | [▶️ Jogar](https://piergiorge.github.io/Vale-do-Sereno/operon/) |
 | 🏝️ **Fundadores** | Estratégia por turnos (anos) | Genética de populações: efeito fundador, gargalo, deriva, endogamia, fluxo gênico, seleção balanceadora | [▶️ Jogar](https://piergiorge.github.io/Vale-do-Sereno/fundadores/) |
 | 🖥️ **Laudo** | Investigação (tela de computador de 8 bits) | Genética forense: STR, DNA degradado, misturas, Y-STR, mtDNA, paternidade, espécie por DNA, toxicologia e entomologia | [▶️ Jogar](https://piergiorge.github.io/Vale-do-Sereno/Laudo/) |
+| 🗼 **Torre 3** | Investigação (uma tela, câmeras e rádio) | Ecologia e saúde: incêndio x neblina, identificação de fauna, caça e garimpo, febre amarela em bugios, armadilhas fotográficas e captura e recaptura | [▶️ Jogar](https://piergiorge.github.io/Vale-do-Sereno/torre-3/) |
+| 🌱 **Regen** | Clicker/idle | Ecologia: sucessão ecológica, pioneiras e espécies de sombra, dispersão de sementes pela fauna, diversidade (índice de Shannon), espécies invasoras e fogo | [▶️ Jogar](https://piergiorge.github.io/Vale-do-Sereno/regen/) |
 
 Todos os jogos têm efeitos sonoros e música gerados por código (a tecla **M** ou o botão de som liga e desliga) e funcionam no celular.
 
@@ -37,6 +39,8 @@ O menu é um mapa ilustrado do vale ao anoitecer. Cada jogo é um lugar:
 | Rio Sereno | Operon |
 | Universidade do Sereno | Fita Molde e GenoBlocos |
 | Instituto de Criminalística | Laudo |
+| Torre de vigia, na encosta da Serra da Bruma | Torre 3 |
+| A clareira queimada da Trilha | Regen |
 | A estrela de Kepler-Rubra | Locus Astra |
 
 ---
@@ -346,6 +350,51 @@ A reviravolta que atravessa o jogo é a genética forense numa **população fun
 
 ---
 
+# 🗼 Torre 3
+
+**Guarda-parque numa torre de vigia, numa tela só.** Seis câmeras da Reserva do Sereno, um mapa e um rádio. O relógio só anda quando você age: cada exame, ficha ou chamada de rádio gasta minutos do turno (18:00 às 06:00), e enquanto isso o fogo cresce e os caçadores fogem.
+
+**Investigar, não adivinhar.** Quando algo aparece numa câmera, você examina: **zoom**, **gráfico** de temperatura e umidade das últimas horas, ou **áudio** do microfone. Com o **guia de campo** identifica a espécie (tamanduá, lobo-guará, onça, jaguatirica, anta, bugio...). Na **ficha**, como no Laudo, só vale afirmar o que foi examinado. Depois decide quem sai: brigada, patrulha, polícia ambiental, resgate, coleta para o laboratório ou Vigilância em Saúde. Equipes são poucas e levam tempo para ir e voltar.
+
+| O que aparece | O que ensina |
+|---|---|
+| Fumaça, neblina, fogueira de quintal | Ler o gráfico: fogo é quente e seco; neblina é fria, com umidade perto de 100% |
+| Luzes azuis no brejo ("Boitatá") | Fogo-fátuo: gases da decomposição em áreas alagadas, quase sem calor |
+| Pegadas "viradas" ("Curupira") | O rastro do tamanduá-bandeira; pegadas de onça sem marca de unha |
+| Bugios mortos | Primatas como sentinelas da febre amarela; quem transmite é o mosquito |
+| Animais feridos e saudáveis | Quando resgatar e quando **não** intervir (onça com filhotes, filhote de sabiá) |
+| Caça, laço, motosserra, garimpo | Crimes ambientais, segurança da equipe, mercúrio e biomagnificação |
+
+**De manhã: armadilhas fotográficas.** Você compara as fotos com o catálogo e reconhece cada onça pelo padrão de rosetas (e separa as jaguatiricas). No fim da temporada estima a população por **captura e recaptura** (Lincoln-Petersen).
+
+**O mistério.** Ao longo das cinco noites (Primeira noite, Tiros no escuro, Luzes no brejo, Rio barrento, Noite seca), as pistas vão para um dossiê: uma luz na Mina Velha, lacrada desde o caso dos ossos do Laudo, uma caminhonete "SB" de madrugada, mercúrio no rio. No fim você entrega um relatório à chefia e ao Ministério Público. As amostras vão para o Laboratório de Perícia do Vale, o mesmo do Laudo. Há também o **plantão livre**, sorteado, e um modo de treinar qualquer noite sem mexer na temporada.
+
+### ▶️ [Jogar o Torre 3](https://piergiorge.github.io/Vale-do-Sereno/torre-3/)
+
+---
+
+# 🌱 Regen
+
+**Do cinza à mata, um clique de cada vez.** Depois da noite seca da Torre 3, a clareira da Trilha virou cinza. Neste clicker/idle você colhe sementes clicando na paisagem e usa as sementes para acelerar a **sucessão ecológica**: Solo queimado → Campo sujo → Capoeira → Mata secundária → Mata madura.
+
+| Mecânica | O que ensina |
+|---|---|
+| Cada muda só "pega" na faixa de luz certa | Pioneiras precisam de sol; espécies de mata madura (jequitibá, palmito-juçara) só nascem na sombra. Cada grupo prepara o terreno para o seguinte |
+| Pioneiras morrem na própria sombra e viram adubo | A troca de espécies na sucessão |
+| Feijão-guandu e ingá melhoram o solo | Leguminosas fixam nitrogênio com rizóbios |
+| Poleiros, abrigos para morcegos, caixas-ninho e corredor ecológico | Nucleação e dispersão de sementes pela fauna; os animais só ficam se houver comida (capacidade de suporte) |
+| Braquiária para arrancar no clique | Espécie invasora que abafa as mudas, vira combustível e traz o fogo de volta; o aceiro protege |
+| Eucalipto barato e rápido | Faz sombra, mas não alimenta a fauna nem conta como floresta nativa |
+| Bônus de diversidade | Índice de Shannon (H): mais espécies e mais equilíbrio, mais produção |
+
+**Eventos.** Madeireiros ilegais, palmiteiros e gado solto aparecem na cena e precisam ser clicados antes que derrubem árvores, cortem a juçara ou comam as mudas; também há chuva forte, cheias, mutirões da escola e visitas de pesquisadores.
+
+**Cinco áreas, cada uma com regras próprias.** Clareira da Trilha (treino), Encosta do Mirante (erosão: cubra o chão depressa), Margem do Rio (mata ciliar: ingá barato e cheias), Borda da Vila (gado e palmiteiros; a cerca resolve o gado) e Pasto Velho (solo compactado e braquiária em dobro). Quando a área vira mata madura, você restaura a próxima, com produção maior para sempre. O jogo continua produzindo com a página fechada (metade do ritmo, até 8 horas), e um diário guarda o que foi aprendido. Um **glossário** (botão **?**, ou um toque em LUZ, SOLO, H e CAPIM) explica cada termo, com os valores da partida: o índice de Shannon (H), sucessão, nucleação, capacidade de suporte, mata ciliar e outros.
+
+### ▶️ [Jogar o Regen](https://piergiorge.github.io/Vale-do-Sereno/regen/)
+
+---
+
 ## Detalhes técnicos
 
 Cada jogo é um único arquivo HTML com JavaScript puro, sem bibliotecas nem dependências externas. Os sons e a música são gerados por código (Web Audio API). Os gráficos do Locus Astra são SVG gerados a partir do fenótipo de cada criatura.
@@ -362,6 +411,8 @@ heranca/index.html
 operon/index.html
 fundadores/index.html
 Laudo/index.html
+torre-3/index.html
+regen/index.html
 ```
 
 No Fita Molde:
